@@ -1,4 +1,4 @@
-# seqAssembler
+# CNRPhyloTree
 
 This repository is done for the purpose of version tools in CNR "Résistance aux antibiotiques".
 
@@ -6,9 +6,3 @@ This repository is done for the purpose of version tools in CNR "Résistance aux
 
 We warns you to do not clone this repository.
 
-
-```bash
-git clone https://github.com/CNRResistanceAntibiotic/seqAssembler.git
-cd seqAssembler
-python3 setup.py install
-```
