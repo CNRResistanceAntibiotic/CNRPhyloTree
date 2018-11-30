@@ -51,6 +51,8 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir = os.path.join(result_dir, genome_name, row['strains'])
+        if not os.path.exists(os.path.dirname(out_dir)):
+            os.mkdir(os.path.dirname(out_dir))
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
 
         if ref_genome not in snippy_dir_dict:
@@ -184,7 +186,7 @@ def manage_snippy_core(snippy_dir_dict):
         snippy_dirs = " ".join(snippy_dir_list)
 
         # case with only one sample that is not respectable !
-        if len(snippy_dir_list) ==1:
+        if len(snippy_dir_list) == 1:
             continue
 
         core_genome_path = os.path.join(os.path.dirname(snippy_dir_list[0]), name_dir)
