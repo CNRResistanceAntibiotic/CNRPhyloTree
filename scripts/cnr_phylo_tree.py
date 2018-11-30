@@ -332,7 +332,7 @@ def pre_main(args):
     if args.Already:
         jump_snippy_detection = args.Already
 
-    if jump_snippy_detection:
+    if not jump_snippy_detection:
         if not os.path.exists(read_dir):  # if the folder of reads exist, continue
             print("your path of directory reads don't exists or we haven't the permission\n")
             print(usage)
