@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 
 import argparse
+import csv
 import multiprocessing
 import os
 import subprocess
@@ -42,6 +43,27 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, snippy_folder):
     cmd = '{0} --ref {1} --prefix {2} {3} '.format(snippy_exe, ref_genome, prefix, snippy_folder)
     print(cmd)
     os.system(cmd)
+
+
+def get_snippy_dir(geno_ref_dir, result_dir, config_list):
+    snippy_dir_dict = {}
+
+    for row in config_list:
+        genome_name = row["genomes"].split(".")[0]
+        out_dir = os.path.join(result_dir, genome_name, row['strains'])
+        ref_genome = os.path.join(geno_ref_dir, row["genomes"])
+
+        if ref_genome not in snippy_dir_dict:
+            snippy_dir_dict[ref_genome] = [out_dir]
+        else:
+            out_dir_list = snippy_dir_dict[ref_genome]
+
+            out_dir_list.append(out_dir)
+
+            # update dict
+            snippy_dir_dict[ref_genome] = out_dir_list
+
+    return snippy_dir_dict
 
 
 def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
@@ -209,58 +231,83 @@ def manage_filter_snp(vcf_list):
 def manage_r_matrix(filter_keep_vcf_list):
     r_matrix_list = []
 
+    jump = False
+
+    # if the matrix file are already present
     for filter_keep_vcf in filter_keep_vcf_list:
-        vcf2dist.main(filter_keep_vcf)
 
         for file in os.listdir(os.path.dirname(filter_keep_vcf)):
 
             if "_filtered_keep_SNP_dist.tsv" in file:
                 r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
+                jump = True
+                print("the matrix step is already done for {0}".format(filter_keep_vcf))
+
+    if not jump:
+
+        for filter_keep_vcf in filter_keep_vcf_list:
+            vcf2dist.main(filter_keep_vcf)
+
+            for file in os.listdir(os.path.dirname(filter_keep_vcf)):
+
+                if "_filtered_keep_SNP_dist.tsv" in file:
+                    r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
 
     return r_matrix_list
 
 
 def manage_make_tree(filter_keep_vcf_list):
 
-
     for filter_keep_vcf in filter_keep_vcf_list:
 
-        with open(filter_keep_vcf, "r") as conf:
-            reader = DictReader(conf, delimiter="\t")
-            headers = reader.fieldnames
+        filename_newick = "newick_tree.nwk"
+        file_newick_path = os.path.join(os.path.dirname(filter_keep_vcf), filename_newick)
 
-            # remove empty col
-            headers=list(filter(None, headers))
+        if not os.path.exists(file_newick_path):
 
-            matrix = []
-            for row in reader:
-                line = []
-                for col in headers:
+            with open(filter_keep_vcf, "r") as conf:
+                reader = DictReader(conf, delimiter="\t")
+                headers = reader.fieldnames
 
-                    value = row[col]
-                    line.append(value)
-                matrix.append(line)
+                # remove empty col
+                headers = list(filter(None, headers))
 
-            dm = DistanceMatrix(matrix, headers)
+                matrix = []
+                for row in reader:
+                    line = []
+                    for col in headers:
 
-            print(dm)
+                        value = row[col]
+                        line.append(value)
+                    matrix.append(line)
 
-            tree = nj(dm)
+                dm = DistanceMatrix(matrix, headers)
 
-            print(tree.ascii_art())
+                # print(dm)
 
-            newick_str = nj(dm, result_constructor=str)
-            print(newick_str)
+                tree = nj(dm)
 
-            print(newick_str[:55], "...")
+                # print(tree.ascii_art())
+
+                newick_str = nj(dm, result_constructor=str)
+
+                with open(file_newick_path, 'w') as out:
+                    out.write("{0}".format(newick_str))
+
+                print("the newick generation step is done for {0}".format(filter_keep_vcf))
+
+        else:
+            print("the newick generation step is already done for {0}".format(filter_keep_vcf))
 
 
-def manage_snp_network(r_matrix_list):
+def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
     for mtx_file in r_matrix_list:
         graph_name = os.path.join(os.path.dirname(mtx_file), "SNP_network.html")
-        st_file = ""
 
-        mtx2mst.main(mtx_file, graph_name, st_file)
+        with open(filter_keep_vcf_list[0]) as f:
+            count_snp_keep = sum(1 for line in f)-6
+
+        mtx2mst.main(mtx_file, graph_name, config_file, count_snp_keep)
 
 
 def pre_main(args):
@@ -268,6 +315,7 @@ def pre_main(args):
     geno_ref_dir = ""
     result_dir = ""
     config_file = ""
+    jump_snippy_detection = False
 
     if args.repRead:
         read_dir = os.path.abspath(args.repRead)
@@ -281,10 +329,14 @@ def pre_main(args):
     if args.config:
         config_file = os.path.abspath(args.config)
 
-    if not os.path.exists(read_dir):  # if the folder of reads exist, continue
-        print("your path of directory reads don't exists or we haven't the permission\n")
-        print(usage)
-        sys.exit()
+    if args.Already:
+        jump_snippy_detection = args.Already
+
+    if jump_snippy_detection:
+        if not os.path.exists(read_dir):  # if the folder of reads exist, continue
+            print("your path of directory reads don't exists or we haven't the permission\n")
+            print(usage)
+            sys.exit()
 
     if not os.path.exists(geno_ref_dir):  # if the folder of genome exist, continue
         print("your reference genome directory don't exists or we haven't the permission\n")
@@ -305,10 +357,10 @@ def pre_main(args):
         print("Result directory was created at '{0}'".format(result_dir))
         os.makedirs(result_dir)
 
-    main(read_dir, geno_ref_dir, result_dir, config_file)
+    main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection)
 
 
-def main(read_dir, geno_ref_dir, result_dir, config_file):
+def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=False):
     """
     This make a configuration file with argument for launch of snakemake
     :param read_dir:
@@ -318,12 +370,20 @@ def main(read_dir, geno_ref_dir, result_dir, config_file):
     """
 
     config_list = load_config(config_file)
+    snippy_dir_dict = {}
 
-    # snippy
-    print("\nStart Snippy")
-    snippy_dir_dict = manage_snippy(read_dir, geno_ref_dir, result_dir, config_list)
-    print("End Snippy")
-    print("*********************************************")
+
+    if not jump_snippy_detection:
+        # snippy
+        print("\nStart Snippy")
+        snippy_dir_dict = manage_snippy(read_dir, geno_ref_dir, result_dir, config_list)
+        print("End Snippy")
+        print("*********************************************")
+
+    else:
+        print("Skip Snippy Detection")
+        snippy_dir_dict = get_snippy_dir(geno_ref_dir, result_dir, config_list)
+        print("*********************************************")
 
     # snippy_core
     print("\nStart Snippy-core")
@@ -352,7 +412,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file):
 
     # networkX
     print("\nStart networkX")
-    manage_snp_network(r_matrix_list)
+    manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
     print("End networkX")
 
 
@@ -380,6 +440,8 @@ def run():
                                                                           "config the association of genome with "
                                                                           "strain (help of csv2json.py for see how "
                                                                           "make this csv file)")
+    parser.add_argument('-p', '--SnippyAlreadyDone', dest="Already", action='store_true', default=False,
+                        help="Indicate if all snippy detection are already done (default: False)")
 
     args = parser.parse_args()
     pre_main(args)
