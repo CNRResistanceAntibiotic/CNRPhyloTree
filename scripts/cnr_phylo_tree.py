@@ -57,7 +57,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             file_path = os.path.join(out_dir_root, file)
             if row["strains"] in file and os.path.isfile(file_path):
                 out_dir = file_path
-        
+
         if not os.path.exists(os.path.dirname(out_dir)):
             os.mkdir(os.path.dirname(out_dir))
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
