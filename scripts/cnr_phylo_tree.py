@@ -53,6 +53,8 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
         out_dir_root = os.path.join(result_dir, genome_name)
         list_file = os.listdir(out_dir_root)
 
+        out_dir = ""
+
         for file in list_file:
             file_path = os.path.join(out_dir_root, file)
             if row["strains"] in file and os.path.isfile(file_path):
