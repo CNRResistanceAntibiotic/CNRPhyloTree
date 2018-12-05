@@ -191,6 +191,8 @@ def manage_snippy_core(snippy_dir_dict):
     vcf_list = []
     print("\n")
 
+    core_genome_path = ""
+
     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
         snippy_dirs = " ".join(snippy_dir_list)
 
