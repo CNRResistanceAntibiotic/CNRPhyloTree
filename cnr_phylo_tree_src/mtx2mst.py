@@ -104,18 +104,21 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     if config_file:
         config_list = load_config(config_file)
 
+        #print(G.nodes['output_snippy_CNR2218_ecoli_cgMLST_ref_2018_v1_ecoli'])
         for name_node, value in legends.items():
             for row_dict in config_list:
 
                 if 'MLST-2' in row_dict:
                     second_mlst = True
 
-                if row_dict['strains'] == name_node:
+                if row_dict['strains'] in name_node:
 
                     # attribute ST number to strain which have ST number precise in csv configuration file, attribute also name
-                    if row_dict['strains'] in G.nodes:
+                    if name_node in G.nodes:
+
                         try:
                             G.nodes[name_node]['st-1'] = row_dict['MLST-1']
+
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = row_dict['MLST-2']
                         except KeyError:
@@ -138,6 +141,7 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                         if second_mlst:
                             G.nodes[name_node]['st-2'] = row_dict['MLST-2']
                         break
+
     else:
         for node in G.nodes:
             G.nodes[node]['st-1'] = ""
