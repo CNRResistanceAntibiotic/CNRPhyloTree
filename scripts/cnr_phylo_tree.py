@@ -65,14 +65,14 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
 
         if ref_genome not in snippy_dir_dict:
-            snippy_dir_dict[ref_genome] = [out_dir]
+            snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
-            out_dir_list = snippy_dir_dict[ref_genome]
+            value_list = snippy_dir_dict[ref_genome]
 
-            out_dir_list.append(out_dir)
+            value_list = value_list+[{"out_dir": out_dir, "strain": row["strains"]}]
 
             # update dict
-            snippy_dir_dict[ref_genome] = out_dir_list
+            snippy_dir_dict[ref_genome] = value_list
 
     return snippy_dir_dict
 
@@ -132,14 +132,14 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
             continue
 
         if ref_genome not in snippy_dir_dict:
-            snippy_dir_dict[ref_genome] = [out_dir]
+            snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
-            out_dir_list = snippy_dir_dict[ref_genome]
+            value_list = snippy_dir_dict[ref_genome]
 
-            out_dir_list.append(out_dir)
+            value_list = value_list+[{"out_dir": out_dir, "strain": row["strains"]}]
 
             # update dict
-            snippy_dir_dict[ref_genome] = out_dir_list
+            snippy_dir_dict[ref_genome] = value_list
 
         if not os.path.exists(out_dir):
 
@@ -194,24 +194,47 @@ def manage_snippy_core(snippy_dir_dict):
     core_genome_path = ""
 
     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
-        snippy_dirs = " ".join(snippy_dir_list)
+
+        snippy_dirs = ""
+        for element in snippy_dir_list:
+            snippy_dirs = snippy_dirs + " " + element["out_dir"]
 
         # case with only one sample that is not respectable !
         if len(snippy_dir_list) == 1:
             continue
 
-        core_genome_path = os.path.join(os.path.dirname(snippy_dir_list[0]), name_dir)
+        core_genome_path = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
 
         if not os.path.exists(core_genome_path):
             os.mkdir(core_genome_path)
             prefix_snippy_core = os.path.join(core_genome_path, name_dir)
+
             run_snippy_core_custom(snippy_exe, genome_ref, prefix_snippy_core, snippy_dirs)
         else:
             print("The core genome folder produces by snippy-core already exist : {0}".format(core_genome_path))
 
     for file in os.listdir(core_genome_path):
         if "{0}.vcf".format(name_dir) in file:
-            vcf_list.append(os.path.join(core_genome_path, file))
+
+            # rename header like the config file want
+            vcf_path = os.path.join(core_genome_path, file)
+            with open(vcf_path, "r") as vcf:
+
+                content = vcf.readlines()
+
+                for line in content:
+                    if "#CHROM" in line:
+
+                        for genome_ref, snippy_dir_list in snippy_dir_dict.items():
+                            for element in snippy_dir_list:
+
+                                line = line.replace(element["out_dir"], element["strain"])
+                                
+            with open(vcf_path, "w") as vcf_write:
+                for line in content:
+                    vcf_write.write(line)
+
+            vcf_list.append(vcf_path)
 
     return vcf_list
 
