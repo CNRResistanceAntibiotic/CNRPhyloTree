@@ -61,7 +61,8 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                 out_dir = file_path
 
         if not os.path.exists(os.path.dirname(out_dir)):
-            os.mkdir(os.path.dirname(out_dir))
+            print("ERROR: the directory for the strain {0} dont exist ! Exit!".format(row["strains"]))
+            exit(1)
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
 
         if ref_genome not in snippy_dir_dict:
@@ -218,18 +219,26 @@ def manage_snippy_core(snippy_dir_dict):
 
             # rename header like the config file want
             vcf_path = os.path.join(core_genome_path, file)
+
             with open(vcf_path, "r") as vcf:
 
                 content = vcf.readlines()
 
-                for line in content:
+                print(type(content))
+
+                for i, line in enumerate(content):
                     if "#CHROM" in line:
 
                         for genome_ref, snippy_dir_list in snippy_dir_dict.items():
                             for element in snippy_dir_list:
 
-                                line = line.replace(element["out_dir"], element["strain"])
-                                
+
+                                line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
+                        content[i] = line
+            for line in content:
+                if "#CHROM" in line:
+                    print(line)
+
             with open(vcf_path, "w") as vcf_write:
                 for line in content:
                     vcf_write.write(line)
