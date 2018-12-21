@@ -104,14 +104,14 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     if config_file:
         config_list = load_config(config_file)
 
-        #print(G.nodes['output_snippy_CNR2218_ecoli_cgMLST_ref_2018_v1_ecoli'])
+        # print(G.nodes['output_snippy_CNR2218_ecoli_cgMLST_ref_2018_v1_ecoli'])
         for name_node, value in legends.items():
             for row_dict in config_list:
 
                 if 'MLST-2' in row_dict:
                     second_mlst = True
 
-                if row_dict['strains'] in name_node:
+                if row_dict['strains'] == name_node:
 
                     # attribute ST number to strain which have ST number precise in csv configuration file, attribute also name
                     if name_node in G.nodes:

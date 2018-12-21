@@ -7,11 +7,14 @@ import os
 import subprocess
 import sys
 from csv import DictReader
+from xml.dom import minidom
 
+from Bio import Phylo
 from skbio import DistanceMatrix
 from skbio.tree import nj
 
 from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst
+import xml.etree.ElementTree as ET
 
 
 def load_config(config_file):
@@ -25,9 +28,9 @@ def load_config(config_file):
 
 
 def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_file):
-
-    cmd = "{0} --cpus {1} --outdir {2} --reference {3} --R1 {4} --R2 {5} ".format(snippy_exe, threads, out_dir, ref_genome,
-                                                                              r1_seq_file, r2_seq_file)
+    cmd = "{0} --cpus {1} --outdir {2} --reference {3} --R1 {4} --R2 {5} ".format(snippy_exe, threads, out_dir,
+                                                                                  ref_genome,
+                                                                                  r1_seq_file, r2_seq_file)
     log_message = " ".join(cmd)
     print(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -57,7 +60,12 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
 
         for file in list_file:
             file_path = os.path.join(out_dir_root, file)
-            if row["strains"] in file and os.path.isdir(file_path):
+
+            if "_" in file:
+
+                file = file.split("_")[0]
+
+            if row["strains"] == file and os.path.isdir(file_path):
                 out_dir = file_path
 
         if not os.path.exists(os.path.dirname(out_dir)):
@@ -70,7 +78,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
         else:
             value_list = snippy_dir_dict[ref_genome]
 
-            value_list = value_list+[{"out_dir": out_dir, "strain": row["strains"]}]
+            value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
 
             # update dict
             snippy_dir_dict[ref_genome] = value_list
@@ -103,7 +111,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
             sys.exit()
 
         for strain in strain_list:
-            if row['strains']+"_" in strain:
+            if row['strains'] + "_" in strain:
                 if "R1" in strain:
                     r1_seq_file = os.path.join(read_dir, strain)
 
@@ -137,7 +145,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
         else:
             value_list = snippy_dir_dict[ref_genome]
 
-            value_list = value_list+[{"out_dir": out_dir, "strain": row["strains"]}]
+            value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
 
             # update dict
             snippy_dir_dict[ref_genome] = value_list
@@ -224,20 +232,13 @@ def manage_snippy_core(snippy_dir_dict):
 
                 content = vcf.readlines()
 
-                print(type(content))
-
                 for i, line in enumerate(content):
                     if "#CHROM" in line:
 
                         for genome_ref, snippy_dir_list in snippy_dir_dict.items():
                             for element in snippy_dir_list:
-
-
                                 line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
                         content[i] = line
-            for line in content:
-                if "#CHROM" in line:
-                    print(line)
 
             with open(vcf_path, "w") as vcf_write:
                 for line in content:
@@ -301,8 +302,7 @@ def manage_r_matrix(filter_keep_vcf_list):
     return r_matrix_list
 
 
-def manage_make_tree(filter_keep_vcf_list):
-
+def manage_make_tree(filter_keep_vcf_list, config_list):
     for filter_keep_vcf in filter_keep_vcf_list:
 
         filename_newick = "newick_tree.nwk"
@@ -321,7 +321,6 @@ def manage_make_tree(filter_keep_vcf_list):
                 for row in reader:
                     line = []
                     for col in headers:
-
                         value = row[col]
                         line.append(value)
                     matrix.append(line)
@@ -341,8 +340,113 @@ def manage_make_tree(filter_keep_vcf_list):
 
                 print("the newick generation step is done for {0}".format(filter_keep_vcf))
 
+                # make phyloxml file
+                file_phyloxml_path = os.path.join(os.path.dirname(filter_keep_vcf), "phyloxml.xml")
+
+                Phylo.convert(file_newick_path, 'newick', file_phyloxml_path, 'phyloxml')
+                print("the phyloxml generation step is done for {0}".format(filter_keep_vcf))
+
+                """
+                # make extended phyloxml file for phyd3
+                file_ext_phyloxml_path = os.path.join(os.path.dirname(filter_keep_vcf), "extended_phyloxml.xml")
+
+                get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list)
+                print("the extended phyloxml generation step is done for {0}".format(filter_keep_vcf))
+                """
         else:
             print("the newick generation step is already done for {0}".format(filter_keep_vcf))
+
+
+
+
+
+def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list):
+    # get uggly xml
+    content = ""
+    with open(file_phyloxml_path, 'r') as xml_very_uggly:
+        content = xml_very_uggly.readlines()
+        for n, line in enumerate(content):
+            newline = line.lstrip().rstrip()
+            content[n] = newline
+
+    xml_string = "".join(content)
+
+
+    tree = ET.ElementTree(ET.fromstring(xml_string))
+    root = tree.getroot()
+
+    ################################################
+    # adding Label
+
+    # adding an element to the root node
+    attrib = {}
+    labels = ET.SubElement(root, "labels")
+
+    # adding an element to the labels node
+    attrib = {'type': 'text'}
+
+    # ST 1
+    label = ET.SubElement(labels, "label", attrib)
+    ET.SubElement(label, "name", show="1").text = "ST-1"
+    ET.SubElement(label, "data", tag="ST-1")
+
+    # ST 2
+    label = ET.SubElement(labels, "label", attrib)
+    ET.SubElement(label, "name", show="1").text = "ST-2"
+    ET.SubElement(label, "data", tag="ST-2")
+
+    # Date sample
+    label = ET.SubElement(labels, "label", attrib)
+    ET.SubElement(label, "name", show="1").text = "Date sample"
+    ET.SubElement(label, "data", tag="Date-sample")
+
+    # Location
+    label = ET.SubElement(labels, "label", attrib)
+    ET.SubElement(label, "name", show="1").text = "location"
+    ET.SubElement(label, "data", tag="location")
+
+
+
+    #######################################"
+    # add labels
+
+    leaf = './{http://www.phyloxml.org}phylogeny/{http://www.phyloxml.org}clade'
+    resu_dict = get_dict_strain_ET(root, leaf, {})
+
+    for leaf, strain in resu_dict.items():
+        for config_dict in config_list:
+            if config_dict.get("strains") == strain:
+                ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
+                ET.SubElement(leaf, "{http://www.phyloxml.org}ST-2").text = config_dict.get("MLST-2")
+                ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
+                ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
+                break
+            else:
+                continue
+
+
+    ################################################
+    tree.write(file_ext_phyloxml_path)
+    ############
+    # make xml pretty
+    xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="   ")
+    xmlstr=xmlstr.replace('phy:', '')
+    with open(file_ext_phyloxml_path, "w") as f:
+        f.write(xmlstr)
+
+
+def get_dict_strain_ET(root, leaf, resu_dict):
+    resu_clade = {}
+    for clade in root.findall(leaf):
+        resu_clade[clade] = {'actual_leaf': leaf, 'next_leaf': leaf+"/"+clade.tag}
+
+        name = clade.find('{http://www.phyloxml.org}name')
+        if name is not None:
+            resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
+        get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict)
+
+    return resu_dict
+
 
 
 def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
@@ -350,7 +454,7 @@ def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
         graph_name = os.path.join(os.path.dirname(mtx_file), "SNP_network.html")
 
         with open(filter_keep_vcf_list[0]) as f:
-            count_snp_keep = sum(1 for line in f)-6
+            count_snp_keep = sum(1 for line in f) - 6
 
         mtx2mst.main(mtx_file, graph_name, config_file, count_snp_keep)
 
@@ -417,7 +521,6 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     config_list = load_config(config_file)
     snippy_dir_dict = {}
 
-
     if not jump_snippy_detection:
         # snippy
         print("\nStart Snippy")
@@ -436,6 +539,8 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     print("End Snippy-core")
     print("*********************************************")
 
+    print(snippy_dir_dict)
+
     # filter SNP
     print("\nStart filtering SNP")
     filter_keep_vcf_list = manage_filter_snp(vcf_list)
@@ -448,10 +553,9 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     print("End distance matrix")
     print("*********************************************")
 
-
     # Make tree
     print("\nStart make tree")
-    manage_make_tree(r_matrix_list)
+    manage_make_tree(r_matrix_list, config_list)
     print("End make tree")
     print("*********************************************")
 
