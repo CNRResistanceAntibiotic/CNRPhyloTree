@@ -63,10 +63,13 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
 
             if "_" in file:
 
-                file = file.split("_")[0]
+                file_split = file.split("_")
 
-            if row["strains"] == file and os.path.isdir(file_path):
-                out_dir = file_path
+                for file_part in file_split:
+
+                    if row["strains"] == file_part and os.path.isdir(file_path):
+                        out_dir = file_path
+                        break
 
         if not os.path.exists(os.path.dirname(out_dir)):
             print("ERROR: the directory for the strain {0} dont exist ! Exit!".format(row["strains"]))
