@@ -13,6 +13,7 @@ from bokeh.palettes import RdYlGn as RYG
 from bokeh.palettes import Greys
 from bokeh.palettes import Viridis
 from bokeh.models import Plot, ColumnDataSource, Circle, MultiLine, Label, LabelSet, Legend, LegendItem
+from networkx.drawing.nx_agraph import graphviz_layout
 
 
 def remove_duplicate(names, array):
@@ -81,26 +82,8 @@ def load_matrix(mtx_file):
     return mtx_dict, legends
 
 
-def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
-    """
-    Compute a network of strain with a distance matrix of SNP difference and
-     plot him in interactive format with html extension
-    :param mtx_dic: This is the distance matrix which contain the distance between each strain in number of different SNP
-    :param graph_name: The name and place of the graph
-    :param st_file: The path of a configuration file that associate strain with their ST number
-    :return:
-    """
+def add_ST_label(config_file, legends, G, second_mlst):
 
-    e = []
-    #    Create an empty graph
-    G = nx.Graph()
-    G.add_nodes_from(mtx_dic['names'])
-
-    matrix = mtx_dic['matrix'].tolist()
-
-    second_mlst = False
-
-    # add ST Label
     if config_file:
         config_list = load_config(config_file)
 
@@ -148,6 +131,31 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
             if second_mlst:
                 G.nodes[node]['st-2'] = ""
 
+    return G, second_mlst
+
+
+def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
+    """
+    Compute a network of strain with a distance matrix of SNP difference and
+     plot him in interactive format with html extension
+    :param mtx_dic: This is the distance matrix which contain the distance between each strain in number of different SNP
+    :param graph_name: The name and place of the graph
+    :param st_file: The path of a configuration file that associate strain with their ST number
+    :return:
+    """
+
+    e = []
+    #    Create an empty graph
+    G = nx.Graph()
+    G.add_nodes_from(mtx_dic['names'])
+
+    matrix = mtx_dic['matrix'].tolist()
+
+    second_mlst = False
+
+    # add ST Label
+    G, second_mlst = add_ST_label(config_file, legends, G, second_mlst)
+
     # create edges with the weight in attribute
     n = 0
     for parent in mtx_dic['names']:
@@ -177,9 +185,12 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     g = nx.minimum_spanning_tree(G)
 
     # take the position give by the Kamada-Kawai algorithm and assign them to corresponding strain
-    pos = nx.kamada_kawai_layout(g)
+    # pos = nx.kamada_kawai_layout(g, scale=50)
+    # pos = nx.spring_layout(g, scale=50)
+    pos = nx.nx_agraph.graphviz_layout(g)
+
     nx.set_node_attributes(g, pos, 'pos')
-    # print(pos)
+    print(pos)
 
     # with the coordinate xy of pos attribute the coordinate x and y to each strain
     for i in pos:
@@ -270,7 +281,7 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                                'y': [i for i in y_edge],
                                'dist': [i for i in snp]})
 
-    plot = figure(plot_width=1700, plot_height=900, x_range=(-1.1, 1.1), y_range=(-1.1, 1.1))
+    plot = figure(plot_width=1700, plot_height=900, x_range=(-1000.1, 1000.1), y_range=(-1000.1, 1000.1))
     try:
         plot.title.text = "Strain network in function of SNP difference (Total SNP : {0}) " \
                           "\n Schema MLST :".format(count_snp_keep) + dic_node_st['MLST_schema']
@@ -283,11 +294,11 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     # option select legend
     legend_node = []
     for name, data in g.nodes(data=True):
-        cercle = plot.circle(x=data['x'], y=data['y'], size=20, fill_color=data['bokeh_color'],
+        circle = plot.circle(x=data['x'], y=data['y'], size=20, fill_color=data['bokeh_color'],
                              muted_color=Viridis[10][3])
         for key, value in legends.items():
             if name == key:
-                legend_node.append((value, [cercle]))
+                legend_node.append((value, [circle]))
                 break
             else:
                 pass
