@@ -305,15 +305,15 @@ def manage_r_matrix(filter_keep_vcf_list):
     return r_matrix_list
 
 
-def manage_make_tree(filter_keep_vcf_list, config_list):
-    for filter_keep_vcf in filter_keep_vcf_list:
+def manage_make_tree(r_matrix_list, config_list):
+    for r_matrix in r_matrix_list:
 
         filename_newick = "newick_tree.nwk"
-        file_newick_path = os.path.join(os.path.dirname(filter_keep_vcf), filename_newick)
+        file_newick_path = os.path.join(os.path.dirname(r_matrix), filename_newick)
 
         if not os.path.exists(file_newick_path):
 
-            with open(filter_keep_vcf, "r") as conf:
+            with open(r_matrix, "r") as conf:
                 reader = DictReader(conf, delimiter="\t")
                 headers = reader.fieldnames
 
@@ -321,19 +321,22 @@ def manage_make_tree(filter_keep_vcf_list, config_list):
                 headers = list(filter(None, headers))
 
                 matrix = []
+                matrix_dict = {}
                 for row in reader:
+
                     line = []
                     for col in headers:
                         value = row[col]
                         line.append(value)
                     matrix.append(line)
 
+                    key = row[""]
+                    del row[""]
+                    matrix_dict[key] = row
+
                 dm = DistanceMatrix(matrix, headers)
 
-                # print(dm)
-
-                tree = nj(dm)
-
+                # tree = nj(dm)
                 # print(tree.ascii_art())
 
                 newick_str = nj(dm, result_constructor=str)
@@ -341,39 +344,38 @@ def manage_make_tree(filter_keep_vcf_list, config_list):
                 with open(file_newick_path, 'w') as out:
                     out.write("{0}".format(newick_str))
 
-                print("the newick generation step is done for {0}".format(filter_keep_vcf))
+                print("the newick generation step is done for {0}".format(r_matrix))
 
                 # make phyloxml file
-                file_phyloxml_path = os.path.join(os.path.dirname(filter_keep_vcf), "phyloxml.xml")
+                file_phylo_xml_path = os.path.join(os.path.dirname(r_matrix), "phyloxml.xml")
 
-                Phylo.convert(file_newick_path, 'newick', file_phyloxml_path, 'phyloxml')
-                print("the phyloxml generation step is done for {0}".format(filter_keep_vcf))
+                Phylo.convert(file_newick_path, 'newick', file_phylo_xml_path, 'phyloxml')
+                print("the phyloxml generation step is done for {0}".format(r_matrix))
 
-                """
                 # make extended phyloxml file for phyd3
-                file_ext_phyloxml_path = os.path.join(os.path.dirname(filter_keep_vcf), "extended_phyloxml.xml")
+                file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
 
-                get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list)
-                print("the extended phyloxml generation step is done for {0}".format(filter_keep_vcf))
-                """
+                get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
+                print("the extended phyloxml generation step is done for {0}".format(r_matrix))
         else:
-            print("the newick generation step is already done for {0}".format(filter_keep_vcf))
+            print("the newick generation step is already done for {0}".format(r_matrix))
 
 
-
-
-
-def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list):
+def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list, matrix_dict):
     # get uggly xml
     content = ""
+
+    strain_list = []
+
     with open(file_phyloxml_path, 'r') as xml_very_uggly:
         content = xml_very_uggly.readlines()
         for n, line in enumerate(content):
             newline = line.lstrip().rstrip()
             content[n] = newline
+            if "<name>" in newline:
+                strain_list.append(newline.replace("<name>", "").replace("</name>", ""))
 
     xml_string = "".join(content)
-
 
     tree = ET.ElementTree(ET.fromstring(xml_string))
     root = tree.getroot()
@@ -387,6 +389,8 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     # adding an element to the labels node
     attrib = {'type': 'text'}
+
+
 
     # ST 1
     label = ET.SubElement(labels, "label", attrib)
@@ -408,13 +412,17 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     ET.SubElement(label, "name", show="1").text = "location"
     ET.SubElement(label, "data", tag="location")
 
+    for strain in strain_list:
+        label = ET.SubElement(labels, "label", attrib)
+        ET.SubElement(label, "name", show="1").text = strain
+        ET.SubElement(label, "data", tag=strain)
 
-
-    #######################################"
+    #######################################
     # add labels
 
     leaf = './{http://www.phyloxml.org}phylogeny/{http://www.phyloxml.org}clade'
-    resu_dict = get_dict_strain_ET(root, leaf, {})
+
+    resu_dict = get_dict_strain_ET(root, leaf, {}, [])
 
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
@@ -423,10 +431,13 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                 ET.SubElement(leaf, "{http://www.phyloxml.org}ST-2").text = config_dict.get("MLST-2")
                 ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
                 ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
+
+                for strain_label in strain_list:
+                    ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text = str(matrix_dict.get(strain).get(strain_label))
+
                 break
             else:
                 continue
-
 
     ################################################
     tree.write(file_ext_phyloxml_path)
@@ -438,18 +449,18 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
         f.write(xmlstr)
 
 
-def get_dict_strain_ET(root, leaf, resu_dict):
-    resu_clade = {}
-    for clade in root.findall(leaf):
-        resu_clade[clade] = {'actual_leaf': leaf, 'next_leaf': leaf+"/"+clade.tag}
+def get_dict_strain_ET(root, leaf, resu_dict, leaf_done_list):
 
-        name = clade.find('{http://www.phyloxml.org}name')
-        if name is not None:
-            resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
-        get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict)
-
+    if leaf not in leaf_done_list:
+        if root.findall(leaf):
+            for clade in root.findall(leaf):
+                name = clade.find('{http://www.phyloxml.org}name')
+                if name is not None:
+                    resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
+                    leaf_done_list.append(leaf)
+                else:
+                    resu_dict = get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
     return resu_dict
-
 
 
 def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
@@ -541,8 +552,6 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     vcf_list = manage_snippy_core(snippy_dir_dict)
     print("End Snippy-core")
     print("*********************************************")
-
-    print(snippy_dir_dict)
 
     # filter SNP
     print("\nStart filtering SNP")
