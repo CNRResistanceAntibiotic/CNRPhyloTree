@@ -336,10 +336,13 @@ def manage_make_tree(r_matrix_list, config_list):
 
                 dm = DistanceMatrix(matrix, headers)
 
-                # tree = nj(dm)
-                # print(tree.ascii_art())
+                tree = nj(dm)
+                print(tree.ascii_art())
+                rooted = tree.root_at_midpoint()
+                print(rooted)
+                print(rooted.ascii_art())
 
-                newick_str = nj(dm, result_constructor=str)
+                newick_str = nj(dm).root_at_midpoint()
 
                 with open(file_newick_path, 'w') as out:
                     out.write("{0}".format(newick_str))
@@ -372,7 +375,7 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
         for n, line in enumerate(content):
             newline = line.lstrip().rstrip()
             content[n] = newline
-            if "<name>" in newline:
+            if "<name>" in newline and "root" not in newline:
                 strain_list.append(newline.replace("<name>", "").replace("</name>", ""))
 
     xml_string = "".join(content)
@@ -424,6 +427,8 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     resu_dict = get_dict_strain_ET(root, leaf, {}, [])
 
+    print(resu_dict)
+
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
             if config_dict.get("strains") == strain:
@@ -455,7 +460,11 @@ def get_dict_strain_ET(root, leaf, resu_dict, leaf_done_list):
         if root.findall(leaf):
             for clade in root.findall(leaf):
                 name = clade.find('{http://www.phyloxml.org}name')
-                if name is not None:
+
+                if name is not None and clade.find('{http://www.phyloxml.org}name').text == "root":
+                    resu_dict = get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
+                elif name is not None:
+                    print("lol")
                     resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
                     leaf_done_list.append(leaf)
                 else:
