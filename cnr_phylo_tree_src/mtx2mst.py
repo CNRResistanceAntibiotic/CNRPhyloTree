@@ -54,7 +54,8 @@ def remove_duplicate(names, array):
 
     print("\nRemove duplicates: {0}\n".format(indexes))
     # print(dl_dic)
-    arr = df.as_matrix()
+    arr = df.values
+
     names = list(df.index)
     return names, arr, legends
 

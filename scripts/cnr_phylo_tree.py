@@ -337,10 +337,10 @@ def manage_make_tree(r_matrix_list, config_list):
                 dm = DistanceMatrix(matrix, headers)
 
                 tree = nj(dm)
-                print(tree.ascii_art())
+                # print(tree.ascii_art())
                 rooted = tree.root_at_midpoint()
-                print(rooted)
-                print(rooted.ascii_art())
+                # print(rooted)
+                # print(rooted.ascii_art())
 
                 newick_str = nj(dm).root_at_midpoint()
 
@@ -370,6 +370,22 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     strain_list = []
 
+    pivot_mlst_1 = False
+    pivot_mlst_2 = False
+    pivot_date_sample = False
+    pivot_location = False
+
+    for dict_config in config_list:
+
+        if dict_config.get("MLST-1"):
+            pivot_mlst_1 = True
+        if dict_config.get("MLST-2"):
+            pivot_mlst_2 = True
+        if dict_config.get("Date sample"):
+            pivot_date_sample = True
+        if dict_config.get("Location"):
+            pivot_location = True
+
     with open(file_phyloxml_path, 'r') as xml_very_uggly:
         content = xml_very_uggly.readlines()
         for n, line in enumerate(content):
@@ -387,7 +403,6 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     # adding Label
 
     # adding an element to the root node
-    attrib = {}
     labels = ET.SubElement(root, "labels")
 
     # adding an element to the labels node
@@ -396,24 +411,28 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
 
     # ST 1
-    label = ET.SubElement(labels, "label", attrib)
-    ET.SubElement(label, "name", show="1").text = "ST-1"
-    ET.SubElement(label, "data", tag="ST-1")
+    if pivot_mlst_1:
+        label = ET.SubElement(labels, "label", attrib)
+        ET.SubElement(label, "name", show="1").text = "ST-1"
+        ET.SubElement(label, "data", tag="ST-1")
 
     # ST 2
-    label = ET.SubElement(labels, "label", attrib)
-    ET.SubElement(label, "name", show="1").text = "ST-2"
-    ET.SubElement(label, "data", tag="ST-2")
+    if pivot_mlst_2:
+        label = ET.SubElement(labels, "label", attrib)
+        ET.SubElement(label, "name", show="1").text = "ST-2"
+        ET.SubElement(label, "data", tag="ST-2")
 
     # Date sample
-    label = ET.SubElement(labels, "label", attrib)
-    ET.SubElement(label, "name", show="1").text = "Date sample"
-    ET.SubElement(label, "data", tag="Date-sample")
+    if pivot_date_sample:
+        label = ET.SubElement(labels, "label", attrib)
+        ET.SubElement(label, "name", show="1").text = "Date sample"
+        ET.SubElement(label, "data", tag="Date-sample")
 
     # Location
-    label = ET.SubElement(labels, "label", attrib)
-    ET.SubElement(label, "name", show="1").text = "location"
-    ET.SubElement(label, "data", tag="location")
+    if pivot_location:
+        label = ET.SubElement(labels, "label", attrib)
+        ET.SubElement(label, "name", show="1").text = "location"
+        ET.SubElement(label, "data", tag="location")
 
     for strain in strain_list:
         label = ET.SubElement(labels, "label", attrib)
@@ -427,15 +446,17 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     resu_dict = get_dict_strain_ET(root, leaf, {}, [])
 
-    print(resu_dict)
-
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
             if config_dict.get("strains") == strain:
-                ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
-                ET.SubElement(leaf, "{http://www.phyloxml.org}ST-2").text = config_dict.get("MLST-2")
-                ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
-                ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
+                if pivot_mlst_1:
+                    ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
+                if pivot_mlst_2:
+                    ET.SubElement(leaf, "{http://www.phyloxml.org}ST-2").text = config_dict.get("MLST-2")
+                if pivot_date_sample:
+                    ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
+                if pivot_location:
+                    ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
 
                 for strain_label in strain_list:
                     ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text = str(matrix_dict.get(strain).get(strain_label))
@@ -464,7 +485,6 @@ def get_dict_strain_ET(root, leaf, resu_dict, leaf_done_list):
                 if name is not None and clade.find('{http://www.phyloxml.org}name').text == "root":
                     resu_dict = get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
                 elif name is not None:
-                    print("lol")
                     resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
                     leaf_done_list.append(leaf)
                 else:
