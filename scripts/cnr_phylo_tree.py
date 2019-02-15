@@ -455,6 +455,7 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     :param matrix_dict: the matrix in hash format
     :return: nothing
     """
+    strain_label_list = []
     strain_list = []
 
     pivot_mlst_1 = False
@@ -480,9 +481,10 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
             content[n] = newline
             if "<name>" in newline and "root" not in newline:
                 strain = newline.replace("<name>", "").replace("</name>", "")
+                strain_list.append(strain)
                 if strain[0].isnumeric():
                     strain = "s" + strain
-                strain_list.append(strain)
+                strain_label_list.append(strain)
 
     xml_string = "".join(content)
 
@@ -522,7 +524,7 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
         ET.SubElement(label, "name", show="1").text = "location"
         ET.SubElement(label, "data", tag="location")
 
-    for strain in strain_list:
+    for strain in strain_label_list:
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = strain
         ET.SubElement(label, "data", tag=strain)
@@ -547,9 +549,9 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                 if pivot_location:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
 
-                for strain_label in strain_list:
+                for n, strain_label in enumerate(strain_label_list):
                     ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text =\
-                        str(matrix_dict.get(strain).get(strain_label))
+                        str(matrix_dict.get(strain).get(strain_list[n]))
 
                 break
             else:
