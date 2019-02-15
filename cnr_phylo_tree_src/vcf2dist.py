@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+    This script will manage the vcf file to matrix distance program
+"""
+
 import os
 import argparse
 from collections import OrderedDict

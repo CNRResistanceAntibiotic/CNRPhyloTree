@@ -1,4 +1,9 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+    This script will manage the networkX graph
+"""
+
 import os
 from csv import DictReader
 
@@ -6,14 +11,12 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import argparse
-import json
-from bokeh.io import show, output_file, save
+from bokeh.io import  output_file, save
 from bokeh.plotting import figure
 from bokeh.palettes import RdYlGn as RYG
 from bokeh.palettes import Greys
 from bokeh.palettes import Viridis
-from bokeh.models import Plot, ColumnDataSource, Circle, MultiLine, Label, LabelSet, Legend, LegendItem
-from networkx.drawing.nx_agraph import graphviz_layout
+from bokeh.models import ColumnDataSource, Legend
 
 
 def remove_duplicate(names, array):

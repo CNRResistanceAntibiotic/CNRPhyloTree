@@ -1,7 +1,10 @@
 #!/usr/bin/python3
+# -*- coding: utf-8 -*-
+"""
+    This script will manage the phylo tree construction
+"""
 
 import argparse
-import csv
 import multiprocessing
 import os
 import subprocess
@@ -10,6 +13,7 @@ from csv import DictReader
 from xml.dom import minidom
 
 from Bio import Phylo
+# from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from skbio import DistanceMatrix
 from skbio.tree import nj
 
@@ -18,21 +22,33 @@ import xml.etree.ElementTree as ET
 
 
 def load_config(config_file):
-    config_list = []
+    """
+    This fonction load config file
+    :param config_file:the config file path
+    :return: the config data in list format
+    """
 
     with open(config_file, "r") as conf:
         reader = DictReader(conf, delimiter=",")
         config_list = list(reader)
-
     return config_list
 
 
 def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_file):
+    """
+    This function run snippy software
+    :param snippy_exe: the executable of snippy
+    :param threads: number of threads
+    :param out_dir: the output directory path
+    :param ref_genome: the reference genome
+    :param r1_seq_file: the R1 fastq file path
+    :param r2_seq_file: the R2 fastq file path
+    :return: log message
+    """
     cmd = "{0} --cpus {1} --outdir {2} --reference {3} --R1 {4} --R2 {5} ".format(snippy_exe, threads, out_dir,
                                                                                   ref_genome,
                                                                                   r1_seq_file, r2_seq_file)
     log_message = " ".join(cmd)
-    print(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
@@ -43,12 +59,26 @@ def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_fil
 
 
 def run_snippy_core_custom(snippy_exe, ref_genome, prefix, snippy_folder):
+    """
+    This fucntion run snippy core custom
+    :param snippy_exe: the executable of snippy
+    :param ref_genome: the reference genome
+    :param prefix: teh prefix given
+    :param snippy_folder: snippy folder
+    :return: nothing
+    """
     cmd = '{0} --ref {1} --prefix {2} {3} '.format(snippy_exe, ref_genome, prefix, snippy_folder)
-    print(cmd)
     os.system(cmd)
 
 
 def get_snippy_dir(geno_ref_dir, result_dir, config_list):
+    """
+    This function get hash table of snippy folder
+    :param geno_ref_dir: the reference genome directory
+    :param result_dir: the directory containing the snippy folder
+    :param config_list: the configuration list
+    :return: hash table of snippy directory
+    """
     snippy_dir_dict = {}
 
     for row in config_list:
@@ -64,15 +94,17 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             if "_" in file:
 
                 file_split = file.split("_")
-
                 for file_part in file_split:
-
                     if row["strains"] == file_part and os.path.isdir(file_path):
                         out_dir = file_path
                         break
+            else:
+                if row["strains"] == file and os.path.isdir(file_path):
+                    out_dir = file_path
+                    break
 
         if not os.path.exists(os.path.dirname(out_dir)):
-            print("ERROR: the directory for the strain {0} dont exist ! Exit!".format(row["strains"]))
+            print("ERROR: the directory snippy for the strain {0} dont exist ! Exit!".format(row["strains"]))
             exit(1)
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
 
@@ -90,6 +122,14 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
 
 
 def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
+    """
+    This function manage run of snippy
+    :param read_dir: the reads directory
+    :param geno_ref_dir: the genome reference directory
+    :param result_dir: the directory containing the snippy folder
+    :param config_list: the configuration list
+    :return: hash table of snippy directory
+    """
     print("\n")
 
     snippy_exe = "/usr/local/snippy/bin/snippy"
@@ -198,6 +238,12 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
 
 
 def manage_snippy_core(snippy_dir_dict):
+    """
+    This function run snippy-core
+    :param snippy_dir_dict: the hash of snippy directory
+    :return: a vcf file list
+    """
+
     snippy_exe = "/usr/local/snippy/bin/snippy-core"
     name_dir = "core_genome"
     vcf_list = []
@@ -253,6 +299,11 @@ def manage_snippy_core(snippy_dir_dict):
 
 
 def manage_filter_snp(vcf_list):
+    """
+    This function launch the filtering of the vcf files
+    :param vcf_list: a list of vcf file
+    :return: a list of vcf filtered file
+    """
     min_dist = 20
     out_prefix = "filter"
     filter_keep_vcf_list = []
@@ -261,7 +312,7 @@ def manage_filter_snp(vcf_list):
 
         if not os.path.exists(os.path.join(os.path.dirname(vcf_core_file),
                                            out_prefix + "_" +
-                                           os.path.basename(vcf_core_file).split(".vcf")[0] +
+                                           str(os.path.basename(vcf_core_file).split(".vcf")[0]) +
                                            "_density_filtered_keep.vcf")):
 
             filter_SNP_density.main(min_dist, vcf_core_file, out_prefix)
@@ -278,6 +329,11 @@ def manage_filter_snp(vcf_list):
 
 
 def manage_r_matrix(filter_keep_vcf_list):
+    """
+    This function launch the matrix calculation
+    :param filter_keep_vcf_list: a list of vcf filtered
+    :return: a list of matrix file
+    """
     r_matrix_list = []
 
     jump = False
@@ -306,6 +362,12 @@ def manage_r_matrix(filter_keep_vcf_list):
 
 
 def manage_make_tree(r_matrix_list, config_list):
+    """
+    This function create tree
+    :param r_matrix_list: a list of matrix file
+    :param config_list: the configuration data
+    :return: message
+    """
     for r_matrix in r_matrix_list:
 
         filename_newick = "newick_tree.nwk"
@@ -338,11 +400,31 @@ def manage_make_tree(r_matrix_list, config_list):
 
                 tree = nj(dm)
                 # print(tree.ascii_art())
-                rooted = tree.root_at_midpoint()
+                # rooted = tree.root_at_midpoint()
                 # print(rooted)
                 # print(rooted.ascii_art())
 
-                newick_str = nj(dm).root_at_midpoint()
+                """
+                print(headers)
+                print(matrix)
+                matrix_triangular = []
+                for n, line in enumerate(matrix):
+                    print(n)
+                    desired_array = [int(numeric_string) for numeric_string in line]
+                    print(desired_array[0:n+1])
+                    matrix_triangular.append(desired_array[0:n+1])
+
+                matrice_biopython = DistanceMatrix(names=headers, matrix=matrix_triangular)
+                constructor = DistanceTreeConstructor()
+                upgmatree = constructor.upgma(matrice_biopython)
+
+                upgmatree_rooted_at_midpoint = upgmatree.root_at_midpoint()
+
+                newick_str = upgmatree_rooted_at_midpoint
+                
+                """
+
+                newick_str = tree.root_at_midpoint()
 
                 with open(file_newick_path, 'w') as out:
                     out.write("{0}".format(newick_str))
@@ -365,9 +447,14 @@ def manage_make_tree(r_matrix_list, config_list):
 
 
 def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list, matrix_dict):
-    # get uggly xml
-    content = ""
-
+    """
+    This function make a phylo extended file
+    :param file_ext_phyloxml_path: the path of the phylo extended file
+    :param file_phyloxml_path: the path of the phylo file
+    :param config_list: the configuration data
+    :param matrix_dict: the matrix in hash format
+    :return: nothing
+    """
     strain_list = []
 
     pivot_mlst_1 = False
@@ -392,7 +479,10 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
             newline = line.lstrip().rstrip()
             content[n] = newline
             if "<name>" in newline and "root" not in newline:
-                strain_list.append(newline.replace("<name>", "").replace("</name>", ""))
+                strain = newline.replace("<name>", "").replace("</name>", "")
+                if strain[0].isnumeric():
+                    strain = "s" + strain
+                strain_list.append(strain)
 
     xml_string = "".join(content)
 
@@ -407,8 +497,6 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     # adding an element to the labels node
     attrib = {'type': 'text'}
-
-
 
     # ST 1
     if pivot_mlst_1:
@@ -444,11 +532,12 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     leaf = './{http://www.phyloxml.org}phylogeny/{http://www.phyloxml.org}clade'
 
-    resu_dict = get_dict_strain_ET(root, leaf, {}, [])
+    resu_dict = get_dict_strain_et(root, leaf, {}, [])
 
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
             if config_dict.get("strains") == strain:
+
                 if pivot_mlst_1:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
                 if pivot_mlst_2:
@@ -459,23 +548,34 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                     ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
 
                 for strain_label in strain_list:
-                    ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text = str(matrix_dict.get(strain).get(strain_label))
+                    ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text =\
+                        str(matrix_dict.get(strain).get(strain_label))
 
                 break
             else:
                 continue
 
     ################################################
-    tree.write(file_ext_phyloxml_path)
+    tree.write(file_ext_phyloxml_path, encoding="utf-8")
     ############
     # make xml pretty
-    xmlstr = minidom.parseString(ET.tostring(root)).toprettyxml(indent="   ")
-    xmlstr=xmlstr.replace('phy:', '')
+
+    xml_str = minidom.parse(file_ext_phyloxml_path).toprettyxml(indent="   ")
+    xml_str = xml_str.replace('phy:', '')
+    
     with open(file_ext_phyloxml_path, "w") as f:
-        f.write(xmlstr)
+        f.write(xml_str)
 
 
-def get_dict_strain_ET(root, leaf, resu_dict, leaf_done_list):
+def get_dict_strain_et(root, leaf, resu_dict, leaf_done_list):
+    """
+    This function render a dict of a ET tree
+    :param root: teh root of the ET tree
+    :param leaf: the first leaf
+    :param resu_dict: the result dict
+    :param leaf_done_list: the list of leaf done in tree
+    :return: the result dict
+    """
 
     if leaf not in leaf_done_list:
         if root.findall(leaf):
@@ -483,16 +583,23 @@ def get_dict_strain_ET(root, leaf, resu_dict, leaf_done_list):
                 name = clade.find('{http://www.phyloxml.org}name')
 
                 if name is not None and clade.find('{http://www.phyloxml.org}name').text == "root":
-                    resu_dict = get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
+                    resu_dict = get_dict_strain_et(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
                 elif name is not None:
                     resu_dict[clade] = clade.find('{http://www.phyloxml.org}name').text
                     leaf_done_list.append(leaf)
                 else:
-                    resu_dict = get_dict_strain_ET(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
+                    resu_dict = get_dict_strain_et(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
     return resu_dict
 
 
 def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
+    """
+    This function make the networkx/bokeh tree
+    :param r_matrix_list: the list of matrix
+    :param config_file: the configuration file
+    :param filter_keep_vcf_list: the list of filtered vcf files
+    :return: nothing
+    """
     for mtx_file in r_matrix_list:
         graph_name = os.path.join(os.path.dirname(mtx_file), "SNP_network.html")
 
@@ -503,6 +610,11 @@ def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
 
 
 def pre_main(args):
+    """
+    The pre-main function that recives arguments
+    :param args: the arguments
+    :return: the arguments
+    """
     read_dir = ""
     geno_ref_dir = ""
     result_dir = ""
@@ -555,6 +667,7 @@ def pre_main(args):
 def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=False):
     """
     This make a configuration file with argument for launch of snakemake
+    :param jump_snippy_detection:
     :param read_dir:
     :param geno_ref_dir:
     :param result_dir:
@@ -562,7 +675,6 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     """
 
     config_list = load_config(config_file)
-    snippy_dir_dict = {}
 
     if not jump_snippy_detection:
         # snippy
@@ -588,7 +700,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     print("End filtering SNP")
     print("*********************************************")
 
-    # Rmatrix
+    # R_matrix
     print("\nStart distance matrix")
     r_matrix_list = manage_r_matrix(filter_keep_vcf_list)
     print("End distance matrix")
@@ -614,7 +726,7 @@ def run():
 
     global usage
 
-    usage = "CNR Phylo tree is a snakemake based programm"
+    usage = "CNR Phylo tree is a snakemake based program"
 
     parser = argparse.ArgumentParser(
         description="This program make a phylogenetic tree with NGS sequence reads and one or more reference genome")
@@ -638,6 +750,10 @@ def run():
 
 
 def version():
+    """
+    The version of the script
+    :return: the version of the script
+    """
     return "1.0"
 
 

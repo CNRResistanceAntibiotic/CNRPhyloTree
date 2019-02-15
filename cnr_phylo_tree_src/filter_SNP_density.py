@@ -1,5 +1,8 @@
 #!/usr/bin/python3
-# coding=utf-8
+# -*- coding: utf-8 -*-
+"""
+    This script will manage the vcf filtering
+"""
 
 import argparse
 import os
