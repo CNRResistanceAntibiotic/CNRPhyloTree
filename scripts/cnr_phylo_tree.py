@@ -60,7 +60,7 @@ def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_fil
 
 def run_snippy_core_custom(snippy_exe, ref_genome, prefix, snippy_folder):
     """
-    This fucntion run snippy core custom
+    This function run snippy core custom
     :param snippy_exe: the executable of snippy
     :param ref_genome: the reference genome
     :param prefix: teh prefix given
@@ -104,6 +104,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                     break
 
         if not os.path.exists(os.path.dirname(out_dir)):
+            print("Path : {0}".format(os.path.dirname(out_dir)))
             print("ERROR: the directory snippy for the strain {0} dont exist ! Exit!".format(row["strains"]))
             exit(1)
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
