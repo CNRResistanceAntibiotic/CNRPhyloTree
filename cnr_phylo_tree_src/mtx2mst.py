@@ -11,7 +11,7 @@ import numpy as np
 import pandas as pd
 import networkx as nx
 import argparse
-from bokeh.io import  output_file, save
+from bokeh.io import output_file, save
 from bokeh.plotting import figure
 from bokeh.palettes import RdYlGn as RYG
 from bokeh.palettes import Greys
@@ -278,8 +278,8 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     y_edge = []
     snp = []
     for edge in g.edges():
-        x_edge.append((g.node[edge[0]]['pos'][0] + g.node[edge[1]]['pos'][0]) / 2)
-        y_edge.append((g.node[edge[0]]['pos'][1] + g.node[edge[1]]['pos'][1]) / 2)
+        x_edge.append((g.nodes[edge[0]]['pos'][0] + g.nodes[edge[1]]['pos'][0]) / 2)
+        y_edge.append((g.nodes[edge[0]]['pos'][1] + g.nodes[edge[1]]['pos'][1]) / 2)
         snp.append(g.edges[edge]['weight'])
     source = ColumnDataSource({'x': [i for i in x_edge],
                                'y': [i for i in y_edge],

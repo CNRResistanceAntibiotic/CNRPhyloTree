@@ -23,7 +23,7 @@ import xml.etree.ElementTree as ET
 
 def load_config(config_file):
     """
-    This fonction load config file
+    This function load config file
     :param config_file:the config file path
     :return: the config data in list format
     """
