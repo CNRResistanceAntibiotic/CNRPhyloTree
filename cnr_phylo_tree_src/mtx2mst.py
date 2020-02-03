@@ -327,6 +327,7 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                           muted_alpha=0, source=source)
 
     if second_mlst:
+        """
         legend = Legend(
             items=[
                       ('Strain Name', [strain_label]),
@@ -336,13 +337,33 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                   ] + legend_node,
             location=(10, 0)
         )
+        """
+        legend = Legend(
+            items=[
+                      ('Strain Name', [strain_label]),
+                      ('ST Number 1', [st_label_1]),
+                      ('ST Number 2', [st_label_2]),
+                      ('SNP difference', [snp_label])
+                  ],
+            location=(10, 0)
+        )
     else:
+        """
         legend = Legend(
             items=[
                       ('Strain Name', [strain_label]),
                       ('ST Number', [st_label_1]),
                       ('SNP difference', [snp_label])
                   ] + legend_node,
+            location=(10, 0)
+        )
+        """
+        legend = Legend(
+            items=[
+                      ('Strain Name', [strain_label]),
+                      ('ST Number', [st_label_1]),
+                      ('SNP difference', [snp_label])
+                  ],
             location=(10, 0)
         )
 
