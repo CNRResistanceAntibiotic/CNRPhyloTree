@@ -133,7 +133,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
     """
     print("\n")
 
-    snippy_exe = "/usr/local/snippy/bin/snippy"
+    snippy_exe = "snippy"
     threads = 8
 
     strain_list = os.listdir(read_dir)
@@ -245,7 +245,7 @@ def manage_snippy_core(snippy_dir_dict):
     :return: a vcf file list
     """
 
-    snippy_exe = "/usr/local/snippy/bin/snippy-core"
+    snippy_exe = "snippy-core"
     name_dir = "core_genome"
     vcf_list = []
     print("\n")
