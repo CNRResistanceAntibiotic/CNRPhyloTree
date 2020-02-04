@@ -170,10 +170,10 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                           {'weight': matrix[n][m], "color": 'red', 'width': 8, 'alpha': 0.8}))
             elif matrix[n][m] < 25:
                 e.append((parent, mtx_dic['names'][m],
-                          {'weight': matrix[n][m], "color": 'orange', 'width': 8, 'alpha': 0.8}))
+                          {'weight': matrix[n][m], "color": 'dark-yellow', 'width': 8, 'alpha': 0.8}))
             elif matrix[n][m] < 50:
                 e.append((parent, mtx_dic['names'][m],
-                          {'weight': matrix[n][m], "color": 'yellow', 'width': 6, 'alpha': 0.8}))
+                          {'weight': matrix[n][m], "color": 'light-yellow', 'width': 6, 'alpha': 0.8}))
             elif matrix[n][m] < 100:
                 e.append((parent, mtx_dic['names'][m],
                           {'weight': matrix[n][m], "color": 'grey', 'width': 4, 'alpha': 0.8}))
@@ -220,26 +220,26 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                 if g[node][key]['color'] == 'red':
                     g.nodes[node]['color'] = 'red'
 
-                elif g[node][key]['color'] == 'orange':
+                elif g[node][key]['color'] == 'dark-yellow':
                     try:
                         if g.nodes[node]['color'] != 'red':
-                            g.nodes[node]['color'] = 'orange'
+                            g.nodes[node]['color'] = 'dark-yellow'
                     except KeyError:
-                        g.nodes[node]['color'] = 'orange'
+                        g.nodes[node]['color'] = 'dark-yellow'
 
-                elif g[node][key]['color'] == 'yellow':
+                elif g[node][key]['color'] == 'light-yellow':
                     try:
-                        if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'orange':
+                        if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'dark-yellow':
                             # print(g[node][key])
-                            g.nodes[node]['color'] = 'yellow'
+                            g.nodes[node]['color'] = 'light-yellow'
                     except KeyError:
                         # print(g[node][key])
-                        g.nodes[node]['color'] = 'yellow'
+                        g.nodes[node]['color'] = 'light-yellow'
 
                 else:
                     try:
-                        if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'orange' \
-                                and g.nodes[node]['color'] != 'yellow':
+                        if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'dark-yellow' \
+                                and g.nodes[node]['color'] != 'light-yellow':
                             g.nodes[node]['color'] = 'grey'
                     except KeyError:
                         g.nodes[node]['color'] = 'grey'
@@ -395,10 +395,10 @@ def color_converter(colors):
             colors[color] = RYG[10][1]
         elif colors[color] == 'red':
             colors[color] = RYG[9][8]
-        elif colors[color] == 'orange':
+        elif colors[color] == 'dark-yellow':
             colors[color] = RYG[9][7]
-        elif colors[color] == 'yellow':
-            colors[color] = Viridis[3][2]
+        elif colors[color] == 'light-yellow':
+            colors[color] = RYG[9][6]
         elif colors[color] == 'grey':
             colors[color] = Greys[6][2]
     return colors
