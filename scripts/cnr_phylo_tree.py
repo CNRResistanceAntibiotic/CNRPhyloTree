@@ -397,7 +397,6 @@ def manage_make_tree(r_matrix_list, config_list):
                     del row[""]
                     matrix_dict[key] = row
 
-
                 dm = DistanceMatrix(matrix, headers)
 
                 tree = nj(dm)

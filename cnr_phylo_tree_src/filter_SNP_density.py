@@ -80,8 +80,7 @@ def read_vcf(vcf_file, threshold=10):
         if unkeep_list:
             vcf_unkeep_list.append(unkeep_list)
 
-
-    return vcf_keep_list, vcf_unkeep_list, sample_names, count;
+    return vcf_keep_list, vcf_unkeep_list, sample_names, count
 
 
 def update_vcf_hash(snp_hash, sample_names, threshold):
