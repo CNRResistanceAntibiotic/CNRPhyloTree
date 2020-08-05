@@ -73,13 +73,13 @@ def vcf2dist(vcf_dic, sample_names):
                     # print 'sample1 diff sample2'
                     s1_genotype = str(record.ALT[int(record.genotype(sample1)['GT'].split('/')[0]) - 1])
                     s2_genotype = str(record.ALT[int(record.genotype(sample2)['GT'].split('/')[0]) - 1])
-                    # print s1_genotype, s2_genotype
+
                     if s1_genotype != 'N' or s2_genotype != 'N':
                         # print 'diff of N'
                         snp_dist_dict[sample1][sample2] = snp_dist_dict[sample1][sample2] + 1
                         snp_dist_dict[sample2][sample1] = snp_dist_dict[sample1][sample2]
                         mlst[sample1][sample2] = mlst[sample1][sample2] + 1
-                    elif s1_genotype != 'N' and s2_genotype != 'N':
+                    if s1_genotype != 'N' and s2_genotype != 'N':
                         snp_dist_rework_dict[sample1][sample2] = snp_dist_rework_dict[sample1][sample2] + 1
                         snp_dist_rework_dict[sample2][sample1] = snp_dist_rework_dict[sample1][sample2]
                         mlst_rework[sample1][sample2] = mlst[sample1][sample2] + 1
