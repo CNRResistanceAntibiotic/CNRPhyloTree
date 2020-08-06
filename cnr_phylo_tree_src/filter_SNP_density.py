@@ -44,7 +44,7 @@ def read_vcf(vcf_file, threshold=10):
         else:
 
             if str(old_var_chrom) == str(var.CHROM):
-                snp_hash[var.POS] = var_list;
+                snp_hash[var.POS] = var_list
                 continue
 
             else:
@@ -186,7 +186,7 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
         for element in vcf_list:
 
             line_to_write = ""
-            count = 0;
+            count = 0
             for x in element:
                 count += 1
 

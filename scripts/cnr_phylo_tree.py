@@ -17,7 +17,7 @@ from Bio import Phylo
 from skbio import DistanceMatrix
 from skbio.tree import nj
 
-from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst
+from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core
 import xml.etree.ElementTree as ET
 
 
@@ -265,6 +265,7 @@ def manage_snippy_core(snippy_dir_dict):
         core_genome_path = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
 
         if not os.path.exists(core_genome_path):
+            print("The core genome folder will be produces by snippy-core : {0}".format(core_genome_path))
             os.mkdir(core_genome_path)
             prefix_snippy_core = os.path.join(core_genome_path, name_dir)
 
@@ -327,6 +328,27 @@ def manage_filter_snp(vcf_list):
                 filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_core_file), file))
 
     return filter_keep_vcf_list
+
+
+def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
+    """
+    This function launch the annotation of filtered vcf file produced before
+    :param filter_keep_vcf_list: a list of vcf file
+    :param snippy_dir_dict: a dict of snippy strain output
+    :return: nothing
+    """
+    vcf_strain_folder_list = []
+    for genome_ref, vcf_snippy_list in snippy_dir_dict.items():
+        for strain_dict in vcf_snippy_list:
+            vcf_strain_folder_list.append(strain_dict["out_dir"])
+
+    for vcf_core_file in filter_keep_vcf_list:
+        output_file = os.path.join(os.path.dirname(vcf_core_file),
+                                   "annotated_{0}".format(os.path.basename(vcf_core_file)))
+        if not os.path.exists(os.path.join(output_file)):
+            annotate_vcf_snippy_core.main(vcf_core_file, vcf_strain_folder_list, output_file)
+        else:
+            print("the annotation is already done for {0}".format(vcf_core_file))
 
 
 def manage_r_matrix(filter_keep_vcf_list):
@@ -676,16 +698,13 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     :param result_dir:
     :param config_file:
     """
-
     config_list = load_config(config_file)
-
     if not jump_snippy_detection:
         # snippy
         print("\nStart Snippy")
         snippy_dir_dict = manage_snippy(read_dir, geno_ref_dir, result_dir, config_list)
         print("End Snippy")
         print("*********************************************")
-
     else:
         print("Skip Snippy Detection")
         snippy_dir_dict = get_snippy_dir(geno_ref_dir, result_dir, config_list)
@@ -701,6 +720,12 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     print("\nStart filtering SNP")
     filter_keep_vcf_list = manage_filter_snp(vcf_list)
     print("End filtering SNP")
+    print("*********************************************")
+
+    # annotated filter SNP
+    print("\nStart annotate filtering SNP")
+    manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
+    print("End annotate filtering SNP")
     print("*********************************************")
 
     # R_matrix
