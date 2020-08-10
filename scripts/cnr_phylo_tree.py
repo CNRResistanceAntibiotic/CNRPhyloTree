@@ -58,7 +58,7 @@ def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_fil
     return log_message
 
 
-def run_snippy_core_custom(snippy_exe, ref_genome, prefix, snippy_folder):
+def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_folder):
     """
     This function run snippy core custom
     :param snippy_exe: the executable of snippy
@@ -67,7 +67,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, snippy_folder):
     :param snippy_folder: snippy folder
     :return: nothing
     """
-    cmd = '{0} --ref {1} --prefix {2} {3} '.format(snippy_exe, ref_genome, prefix, snippy_folder)
+    cmd = '{0} --ref {1} --prefix {2} --mask {3} {4}'.format(snippy_exe, ref_genome, prefix, bed_file, snippy_folder)
     os.system(cmd)
 
 
@@ -238,7 +238,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
     return snippy_dir_dict
 
 
-def manage_snippy_core(snippy_dir_dict):
+def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
     """
     This function run snippy-core
     :param snippy_dir_dict: the hash of snippy directory
@@ -247,10 +247,9 @@ def manage_snippy_core(snippy_dir_dict):
 
     snippy_exe = "snippy-core"
     name_dir = "core_genome"
+
     vcf_list = []
     print("\n")
-
-    core_genome_path = ""
 
     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
 
@@ -262,16 +261,8 @@ def manage_snippy_core(snippy_dir_dict):
         if len(snippy_dir_list) == 1:
             continue
 
-        core_genome_path = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
-
-        if not os.path.exists(core_genome_path):
-            print("The core genome folder will be produces by snippy-core : {0}".format(core_genome_path))
-            os.mkdir(core_genome_path)
-            prefix_snippy_core = os.path.join(core_genome_path, name_dir)
-
-            run_snippy_core_custom(snippy_exe, genome_ref, prefix_snippy_core, snippy_dirs)
-        else:
-            print("The core genome folder produces by snippy-core already exist : {0}".format(core_genome_path))
+        prefix_snippy_core = os.path.join(core_genome_path, name_dir)
+        run_snippy_core_custom(snippy_exe, genome_ref, prefix_snippy_core, bed_file, snippy_dirs)
 
     for file in os.listdir(core_genome_path):
         if "{0}.vcf".format(name_dir) in file:
@@ -328,6 +319,30 @@ def manage_filter_snp(vcf_list):
                 filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_core_file), file))
 
     return filter_keep_vcf_list
+
+
+def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
+    low_cov_file_list = []
+
+    merge_bed_file = os.path.join(snippy_core_genome_folder, "merged_bed_file.bed")
+    merge_bed_sort_file = os.path.join(snippy_core_genome_folder, "merged_bed_sort_file.bed")
+    for genome_ref, strain_snippy_list in snippy_dir_dict.items():
+        for element in strain_snippy_list:
+            for file in os.listdir(element["out_dir"]):
+                if "low_coverage_region_" in file and "_sort.bed" in file:
+                    low_coverage_file = os.path.join(element["out_dir"], file)
+
+                    low_cov_file_list.append(low_coverage_file)
+
+    cmd = "cat {0} > {1} | sortBed -i {1} | mergeBed -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
+    log_message = cmd
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+
+    print(log_message)
+
+    return merge_bed_sort_file
 
 
 def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
@@ -699,6 +714,9 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     :param config_file:
     """
     config_list = load_config(config_file)
+
+
+
     if not jump_snippy_detection:
         # snippy
         print("\nStart Snippy")
@@ -710,11 +728,26 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
         snippy_dir_dict = get_snippy_dir(geno_ref_dir, result_dir, config_list)
         print("*********************************************")
 
+    name_dir = "core_genome"
+    for geno_ref, snippy_dir_list in snippy_dir_dict.items():
+        snippy_core_genome_folder = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
+        break
+
+    if not os.path.exists(snippy_core_genome_folder):
+        os.makedirs(snippy_core_genome_folder)
+
+    # filter by low coverage
+    print("\nStart load filter by low coverage")
+    bed_file = read_low_coverage(snippy_dir_dict, snippy_core_genome_folder)
+    print("\nEnd load filter by low coverage")
+
     # snippy_core
     print("\nStart Snippy-core")
-    vcf_list = manage_snippy_core(snippy_dir_dict)
+    vcf_list = manage_snippy_core(snippy_dir_dict, snippy_core_genome_folder, bed_file)
     print("End Snippy-core")
     print("*********************************************")
+
+
 
     # filter SNP
     print("\nStart filtering SNP")

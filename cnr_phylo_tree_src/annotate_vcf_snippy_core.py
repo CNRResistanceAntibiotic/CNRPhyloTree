@@ -81,7 +81,6 @@ def annotate_vcf(vcf_dic, sample_names, vcf_strain_dict_dict, annotate_vcf_snipp
                     [element["CHROM"], element["POS"], element["REF"], element["ALT"], ""] + sample_l)
 
 
-
 def pre_main(args):
     vcf_file = os.path.abspath(args.vcf)
     vcf_folder = os.path.abspath(args.vcf_folder)
@@ -100,8 +99,6 @@ def main(vcf_file, vcf_folder_list, annotate_vcf_snippy_core):
         vcf_strain_dict_dict[sample_names_s[0]] = vcf_dic_s
 
     annotate_vcf(vcf_dic, sample_names, vcf_strain_dict_dict, annotate_vcf_snippy_core)
-
-    print('\nvcf to matrix distances done!\n')
 
 
 def version():

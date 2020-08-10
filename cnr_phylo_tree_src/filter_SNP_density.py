@@ -233,6 +233,8 @@ def main(min_dist, vcf_file, out_prefix):
         out_vcf_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_keep.vcf")
         out_vcf_unkeep_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_unkeep.vcf")
 
+
+
     print("\nDATE: ", datetime.datetime.now())
 
     vcf_list, vcf_unkeep_list, sample_names, count = read_vcf(vcf_file, min_dist)
