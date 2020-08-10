@@ -333,7 +333,7 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
                     low_coverage_file = os.path.join(element["out_dir"], file)
                     low_cov_file_list.append(low_coverage_file)
 
-    cmd = "cat {0} > {1} | sortBed -i {1} | mergeBed -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
+    cmd = "cat {0} > {1} | bedtools sort -i {1} | bedtools merge -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
     log_message = cmd
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
