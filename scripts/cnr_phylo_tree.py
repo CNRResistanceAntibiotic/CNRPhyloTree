@@ -331,7 +331,6 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
             for file in os.listdir(element["out_dir"]):
                 if "low_coverage_region_" in file:
                     low_coverage_file = os.path.join(element["out_dir"], file)
-
                     low_cov_file_list.append(low_coverage_file)
 
     cmd = "cat {0} > {1} | sortBed -i {1} | mergeBed -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
@@ -339,6 +338,8 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+
+    print(log_message)
 
     return merge_bed_sort_file
 
@@ -733,14 +734,13 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     print("\nStart load filter by low coverage")
     bed_file = read_low_coverage(snippy_dir_dict, snippy_core_genome_folder)
     print("\nEnd load filter by low coverage")
+    print("*********************************************")
 
     # snippy_core
     print("\nStart Snippy-core")
     vcf_list = manage_snippy_core(snippy_dir_dict, snippy_core_genome_folder, bed_file)
     print("End Snippy-core")
     print("*********************************************")
-
-
 
     # filter SNP
     print("\nStart filtering SNP")
