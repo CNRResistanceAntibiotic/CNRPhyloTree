@@ -329,7 +329,7 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
     for genome_ref, strain_snippy_list in snippy_dir_dict.items():
         for element in strain_snippy_list:
             for file in os.listdir(element["out_dir"]):
-                if "low_coverage_region_" in file and "_sort.bed" in file:
+                if "low_coverage_region_" in file:
                     low_coverage_file = os.path.join(element["out_dir"], file)
 
                     low_cov_file_list.append(low_coverage_file)
@@ -339,8 +339,6 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-
-    print(log_message)
 
     return merge_bed_sort_file
 
@@ -655,10 +653,7 @@ def pre_main(args):
     :param args: the arguments
     :return: the arguments
     """
-    read_dir = ""
-    geno_ref_dir = ""
-    result_dir = ""
-    config_file = ""
+    read_dir = geno_ref_dir = result_dir = config_file = ""
     jump_snippy_detection = False
 
     if args.repRead:
@@ -714,8 +709,6 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     :param config_file:
     """
     config_list = load_config(config_file)
-
-
 
     if not jump_snippy_detection:
         # snippy
