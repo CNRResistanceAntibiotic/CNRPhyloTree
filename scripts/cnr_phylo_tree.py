@@ -341,6 +341,16 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
 
     print(log_message)
 
+    awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
+    cmd = "{0} | {1}".format(merge_bed_sort_file, awk_cmd)
+
+    log_message = cmd
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\nCOUNT:' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+
+    print(log_message)
+
     return merge_bed_sort_file
 
 
