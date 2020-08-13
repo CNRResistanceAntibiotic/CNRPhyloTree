@@ -25,7 +25,9 @@ def read_vcf(vcf_file):
 
 def annotate_vcf(vcf_dic, sample_names, vcf_strain_dict_dict, annotate_vcf_snippy_core):
     out_dict_list = []
+    counter = 0
     for chrom in vcf_dic.keys():
+        counter += 1
         records_filt = vcf_dic[chrom]
         for strain_name, vcf_strain_dict in vcf_strain_dict_dict.items():
             if chrom in vcf_strain_dict:
@@ -63,6 +65,8 @@ def annotate_vcf(vcf_dic, sample_names, vcf_strain_dict_dict, annotate_vcf_snipp
                                 if not existed:
                                     out_dict_list.append(out_dict)
                                 break
+            else:
+                continue
     out_dict_list = sorted(out_dict_list, key=lambda i: (i['CHROM'], i['POS']))
     with open(annotate_vcf_snippy_core, "w") as output_file:
         tsv_writer = csv.writer(output_file, delimiter='\t')

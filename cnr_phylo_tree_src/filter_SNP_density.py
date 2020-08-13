@@ -6,11 +6,32 @@
 
 import argparse
 import os
+from collections import OrderedDict
+
 import vcf
 import datetime
 
 
-def read_vcf(vcf_file, threshold=10):
+def read_vcf(vcf_file, not_snp_dict):
+    print("\nRead vcf file {}".format(vcf_file))
+    vcf_dic = OrderedDict()
+    vcf_reader = vcf.Reader(open(vcf_file, 'r'))
+    sample_names = vcf_reader.samples
+    for record in vcf_reader:
+        if record.CHROM not in vcf_dic.keys():
+            vcf_dic[record.CHROM] = [record]
+        else:
+            vcf_dic[record.CHROM].append(record)
+        if "{0}|{1}".format(record.CHROM, record.POS) in not_snp_dict:
+            continue
+        elif "snp" not in record.INFO['TYPE']:
+            not_snp_dict["{0}|{1}".format(record.CHROM, record.POS)] = ""
+    print("Number of loci   : {}".format(len(vcf_dic)))
+    print("Number of samples: {}".format(len(sample_names)))
+    return vcf_dic, sample_names, not_snp_dict
+
+
+def read_with_min_dist_vcf(vcf_file, threshold=10, not_snp_dict={}):
     print("\nRead vcf file {}".format(vcf_file))
 
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
@@ -28,6 +49,9 @@ def read_vcf(vcf_file, threshold=10):
         count += 1
 
         var_list = [var.CHROM, var.POS, '.', var.REF, var.ALT, var.QUAL, '.', var.INFO, var.FORMAT]
+
+        if "{0}|{1}".format(var.CHROM, var.POS) in not_snp_dict:
+            continue
 
         snp_name_hash = {}
         for sample in sample_names:
@@ -215,10 +239,11 @@ def pre_main(args):
     min_dist = int(args.mindist)
     vcf_file = os.path.abspath(args.vcf)
     out_prefix = args.outPrefix
-    main(min_dist, vcf_file, out_prefix)
+    vcf_folder_list = os.path.abspath(args.vcf_folder)
+    main(min_dist, vcf_file, out_prefix, vcf_folder_list)
 
 
-def main(min_dist, vcf_file, out_prefix):
+def main(min_dist, vcf_file, out_prefix, vcf_folder_list):
 
     print("\nSNP density threshold: 2 SNPs for {0} base(s)".format(min_dist))
 
@@ -233,11 +258,19 @@ def main(min_dist, vcf_file, out_prefix):
         out_vcf_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_keep.vcf")
         out_vcf_unkeep_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_unkeep.vcf")
 
+    print("\nDATE: ", datetime.datetime.now())
 
+    vcf_strain_dict_dict = {}
+    not_snp_dict = {}
+    for vcf_folder in vcf_folder_list:
+        vcf_file_s = os.path.join(vcf_folder, "snps.vcf")
+        vcf_dic_s, sample_names_s, not_snp_dict = read_vcf(vcf_file_s, not_snp_dict)
+        print("Number of non SNP element view (complex...): ", len(not_snp_dict))
+        vcf_strain_dict_dict[sample_names_s[0]] = vcf_dic_s
 
     print("\nDATE: ", datetime.datetime.now())
 
-    vcf_list, vcf_unkeep_list, sample_names, count = read_vcf(vcf_file, min_dist)
+    vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, not_snp_dict)
 
     print("\nDATE: ", datetime.datetime.now())
 
@@ -271,9 +304,12 @@ def run():
     parser.add_argument('-v', '--vcf', dest="vcf", default='test.vcf', help='vcf file [snps.recode.vcf]')
     parser.add_argument('-min', '--mindist', dest="mindist", default='20',
                         help='Select minimum distance between SNPs [10]')
+    parser.add_argument('-vf', '--vcf_folder', dest="vcf_folder", default='vcf_output_snippy',
+                        help='folder with strain snippy vcf')
     parser.add_argument('-o', '--out', dest="outPrefix", default='', help='ouput prefix')
     parser.add_argument('-V', '--version', action='version', version='VCFfilterSNPdensity-' + version(),
                         help="Prints version number")
+
     args = parser.parse_args()
     pre_main(args)
 

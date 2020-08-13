@@ -291,7 +291,7 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
     return vcf_list
 
 
-def manage_filter_snp(vcf_list):
+def manage_filter_snp(vcf_list, snippy_dir_dict):
     """
     This function launch the filtering of the vcf files
     :param vcf_list: a list of vcf file
@@ -308,7 +308,12 @@ def manage_filter_snp(vcf_list):
                                            str(os.path.basename(vcf_core_file).split(".vcf")[0]) +
                                            "_density_filtered_keep.vcf")):
 
-            filter_SNP_density.main(min_dist, vcf_core_file, out_prefix)
+            vcf_strain_folder_list = []
+            for genome_ref, vcf_snippy_list in snippy_dir_dict.items():
+                for strain_dict in vcf_snippy_list:
+                    vcf_strain_folder_list.append(strain_dict["out_dir"])
+
+            filter_SNP_density.main(min_dist, vcf_core_file, out_prefix, vcf_strain_folder_list)
 
         else:
             print("the filtration is already done for {0}".format(vcf_core_file))
@@ -754,7 +759,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
 
     # filter SNP
     print("\nStart filtering SNP")
-    filter_keep_vcf_list = manage_filter_snp(vcf_list)
+    filter_keep_vcf_list = manage_filter_snp(vcf_list, snippy_dir_dict)
     print("End filtering SNP")
     print("*********************************************")
 
