@@ -67,7 +67,11 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     :param snippy_folder: snippy folder
     :return: nothing
     """
-    cmd = '{0} --ref {1} --prefix {2} --mask {3} {4}'.format(snippy_exe, ref_genome, prefix, bed_file, snippy_folder)
+    if bed_file == "no file":
+        cmd = '{0} --ref {1} --prefix {2} {4}'.format(snippy_exe, ref_genome, prefix, snippy_folder)
+    else:
+        cmd = '{0} --ref {1} --prefix {2} --mask {3} {4}'.format(snippy_exe, ref_genome, prefix, bed_file,
+                                                                 snippy_folder)
     os.system(cmd)
 
 
@@ -357,7 +361,9 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
 
         print(log_message)
 
-    return merge_bed_sort_file
+        return merge_bed_sort_file
+    else:
+        return "no file"
 
 
 def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
