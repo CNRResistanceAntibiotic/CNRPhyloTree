@@ -68,7 +68,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     :return: nothing
     """
     if bed_file == "no file":
-        cmd = '{0} --ref {1} --prefix {2} {4}'.format(snippy_exe, ref_genome, prefix, snippy_folder)
+        cmd = '{0} --ref {1} --prefix {2} {3}'.format(snippy_exe, ref_genome, prefix, snippy_folder)
     else:
         cmd = '{0} --ref {1} --prefix {2} --mask {3} {4}'.format(snippy_exe, ref_genome, prefix, bed_file,
                                                                  snippy_folder)
