@@ -337,24 +337,25 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
                 if "low_coverage_region_" in file:
                     low_coverage_file = os.path.join(element["out_dir"], file)
                     low_cov_file_list.append(low_coverage_file)
+    if low_cov_file_list:
+        print("LOW COVERAGE PROCESS")
+        cmd = "cat {0} > {1} | bedtools sort -i {1} | bedtools merge -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
+        log_message = cmd
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
 
-    cmd = "cat {0} > {1} | bedtools sort -i {1} | bedtools merge -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
-    log_message = cmd
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+        print(log_message)
 
-    print(log_message)
+        awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
+        cmd = "cat {0} | {1}".format(merge_bed_sort_file, awk_cmd)
 
-    awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
-    cmd = "cat {0} | {1}".format(merge_bed_sort_file, awk_cmd)
+        log_message = cmd
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        log_message = log_message + '\nCOUNT:' + out.decode("utf-8") + '\n' + err.decode("utf-8")
 
-    log_message = cmd
-    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    out, err = p.communicate()
-    log_message = log_message + '\nCOUNT:' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-
-    print(log_message)
+        print(log_message)
 
     return merge_bed_sort_file
 
