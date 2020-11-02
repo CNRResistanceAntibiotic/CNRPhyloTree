@@ -304,29 +304,21 @@ def manage_filter_snp(vcf_list, snippy_dir_dict):
     min_dist = 20
     out_prefix = "filter"
     filter_keep_vcf_list = []
-
     for vcf_core_file in vcf_list:
-
         if not os.path.exists(os.path.join(os.path.dirname(vcf_core_file),
                                            out_prefix + "_" +
                                            str(os.path.basename(vcf_core_file).split(".vcf")[0]) +
                                            "_density_filtered_keep.vcf")):
-
             vcf_strain_folder_list = []
             for genome_ref, vcf_snippy_list in snippy_dir_dict.items():
                 for strain_dict in vcf_snippy_list:
                     vcf_strain_folder_list.append(strain_dict["out_dir"])
-
             filter_SNP_density.main(min_dist, vcf_core_file, out_prefix, vcf_strain_folder_list)
-
         else:
-            print("the filtration is already done for {0}".format(vcf_core_file))
-
+            print(f"the filtration is already done for {vcf_core_file}")
         for file in os.listdir(os.path.dirname(vcf_core_file)):
-
             if "_filtered_keep.vcf" in file:
                 filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_core_file), file))
-
     return filter_keep_vcf_list
 
 

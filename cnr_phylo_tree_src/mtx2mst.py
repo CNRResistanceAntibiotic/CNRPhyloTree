@@ -170,10 +170,10 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                           {'weight': matrix[n][m], "color": 'red', 'width': 8, 'alpha': 0.8}))
             elif matrix[n][m] < 25:
                 e.append((parent, mtx_dic['names'][m],
-                          {'weight': matrix[n][m], "color": 'dark-yellow', 'width': 8, 'alpha': 0.8}))
+                          {'weight': matrix[n][m], "color": 'goldenrod', 'width': 8, 'alpha': 0.8}))
             elif matrix[n][m] < 50:
                 e.append((parent, mtx_dic['names'][m],
-                          {'weight': matrix[n][m], "color": 'light-yellow', 'width': 6, 'alpha': 0.8}))
+                          {'weight': matrix[n][m], "color": 'yellow', 'width': 6, 'alpha': 0.8}))
             elif matrix[n][m] < 100:
                 e.append((parent, mtx_dic['names'][m],
                           {'weight': matrix[n][m], "color": 'grey', 'width': 4, 'alpha': 0.8}))
