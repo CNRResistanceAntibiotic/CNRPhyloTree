@@ -572,8 +572,8 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     # Location
     if pivot_location:
         label = ET.SubElement(labels, "label", attrib)
-        ET.SubElement(label, "name", show="1").text = "location"
-        ET.SubElement(label, "data", tag="location")
+        ET.SubElement(label, "name", show="1").text = "antibiotic"
+        ET.SubElement(label, "data", tag="antibiotic")
 
     for strain in strain_label_list:
         label = ET.SubElement(labels, "label", attrib)
@@ -598,7 +598,7 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                 if pivot_date_sample:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
                 if pivot_location:
-                    ET.SubElement(leaf, "{http://www.phyloxml.org}location").text = config_dict.get("Location")
+                    ET.SubElement(leaf, "{http://www.phyloxml.org}antibiotic").text = config_dict.get("Location")
 
                 for n, strain_label in enumerate(strain_label_list):
                     ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text =\

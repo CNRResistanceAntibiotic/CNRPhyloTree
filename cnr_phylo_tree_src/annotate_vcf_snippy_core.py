@@ -13,14 +13,16 @@ def read_vcf(vcf_file):
     vcf_dic = OrderedDict()
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
     sample_names = vcf_reader.samples
+    counter = 0
     for record in vcf_reader:
+        counter += 1
         if record.CHROM not in vcf_dic.keys():
             vcf_dic[record.CHROM] = [record]
         else:
             vcf_dic[record.CHROM].append(record)
     print("Number of loci   : {}".format(len(vcf_dic)))
     print("Number of samples: {}".format(len(sample_names)))
-    return vcf_dic, sample_names
+    return vcf_dic, sample_names, counter
 
 
 def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_core):
@@ -35,8 +37,6 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
             strain_name = sample_names_s[0]
             if chrom in vcf_strain_dict:
                 records = vcf_strain_dict[chrom]
-                print(len(records))
-                print(len(records_filt))
                 for record_filt in records_filt:
                     for record in records:
                         if record_filt.CHROM == record.CHROM and record_filt.POS == record.POS:
@@ -85,7 +85,8 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
                 else:
                     sample_l.append("0")
             if "ANN" in out_dict:
-                tsv_writer.writerow([out_dict["CHROM"], out_dict["POS"], out_dict["REF"], out_dict["ALT"], out_dict["ANN"]] + sample_l)
+                tsv_writer.writerow([out_dict["CHROM"], out_dict["POS"], out_dict["REF"], out_dict["ALT"],
+                                     out_dict["ANN"]] + sample_l)
             else:
                 tsv_writer.writerow(
                     [out_dict["CHROM"], out_dict["POS"], out_dict["REF"], out_dict["ALT"], ""] + sample_l)
@@ -100,10 +101,11 @@ def pre_main(args):
 
 def main(vcf_file, vcf_folder_list, annotate_vcf_snippy_core):
     # read snippy-core result vcf
-    vcf_dic, sample_names = read_vcf(vcf_file)
+    vcf_dic, sample_names, counter = read_vcf(vcf_file)
 
-    # annotate with other vcf
-    annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_core)
+    if counter <= 5000:
+        # annotate with other vcf
+        annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_core)
 
 
 def version():
