@@ -102,10 +102,13 @@ def pre_main(args):
 def main(vcf_file, vcf_folder_list, annotate_vcf_snippy_core):
     # read snippy-core result vcf
     vcf_dic, sample_names, counter = read_vcf(vcf_file)
-
-    if counter <= 5000:
+    threshold = 5000
+    if counter <= threshold:
         # annotate with other vcf
         annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_core)
+    else:
+        print("The number of SNP in the core vcf is superior to {0} ({1}). No Supplementary annotation"
+              " provided.".format(threshold, counter))
 
 
 def version():
