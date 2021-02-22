@@ -13,7 +13,7 @@ import pandas as pd
 
 
 def read_vcf(vcf_file):
-    print("\nRead vcf file {}".format(vcf_file))
+    print(f"\nRead vcf file {vcf_file}")
     vcf_dic = OrderedDict()
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
     sample_names = vcf_reader.samples
@@ -22,8 +22,8 @@ def read_vcf(vcf_file):
             vcf_dic[record.CHROM] = [record]
         else:
             vcf_dic[record.CHROM].append(record)
-    print("Number of loci   : {}".format(len(vcf_dic)))
-    print("Number of samples: {}".format(len(sample_names)))
+    print(f"Number of loci   : {len(vcf_dic)}")
+    print(f"Number of samples: {len(sample_names)}")
     return vcf_dic, sample_names
 
 
@@ -31,12 +31,10 @@ def vcf2dist(vcf_dic, sample_names):
     print("\nConvert VCF data in SNP and MLST distances")
     contig_dist_dict = OrderedDict()
     snp_dist_dict = OrderedDict()
-
     for sample1 in sample_names:
         if sample1 not in contig_dist_dict.keys():
             contig_dist_dict[sample1] = OrderedDict()
             snp_dist_dict[sample1] = OrderedDict()
-
         for sample2 in sample_names:
             contig_dist_dict[sample1][sample2] = 0
             snp_dist_dict[sample1][sample2] = 0
@@ -49,7 +47,6 @@ def vcf2dist(vcf_dic, sample_names):
                 mlst[sample1] = OrderedDict({sample2: 0})
             else:
                 mlst[sample1][sample2] = 0
-
         # snp distance
         for record in records:
             for sample1, sample2 in combinations(sample_names, 2):
@@ -58,7 +55,6 @@ def vcf2dist(vcf_dic, sample_names):
                     # print 'sample1 diff sample2'
                     s1_genotype = str(record.ALT[int(record.genotype(sample1)['GT'].split('/')[0]) - 1])
                     s2_genotype = str(record.ALT[int(record.genotype(sample2)['GT'].split('/')[0]) - 1])
-
                     if s1_genotype != 'N' and s2_genotype != 'N':
                         # print 'diff of N'
                         snp_dist_dict[sample1][sample2] = snp_dist_dict[sample1][sample2] + 1
@@ -66,21 +62,19 @@ def vcf2dist(vcf_dic, sample_names):
                         mlst[sample1][sample2] = mlst[sample1][sample2] + 1
                 # else:
                 #	print "%s %s %s %i: N genotype excluded in SNP count" % (sample1, sample2, chrom, record.POS)
-
         # contig distance (unscoop to snp distance)
         for sample1, sample2 in combinations(sample_names, 2):
             if mlst[sample1][sample2] > 0:
                 contig_dist_dict[sample1][sample2] = contig_dist_dict[sample1][sample2] + 1
                 contig_dist_dict[sample2][sample1] = contig_dist_dict[sample1][sample2]
-
     return snp_dist_dict, contig_dist_dict
 
 
-def write_dist(dist_dic, dist_type, out_prefix):
-    df = pd.DataFrame.from_records(dist_dic)
+def write_dist(dist_dic, dist_type, out_prefix, sample_names):
+    df = pd.DataFrame.from_records(data=dist_dic, columns=sample_names)
     outfile = out_prefix + '_%s_dist.tsv' % dist_type
     df.to_csv(outfile, sep='\t')
-    print("{0} distance matrix written in {1}".format(dist_type, outfile))
+    print(f"{dist_type} distance matrix written in {outfile}")
 
 
 def pre_main(args):
@@ -90,12 +84,10 @@ def pre_main(args):
 
 def main(vcf_file):
     out_prefix = os.path.splitext(vcf_file)[0]
-
     vcf_dic, sample_names = read_vcf(vcf_file)
     snp_dist_dict, contig_dist_dict = vcf2dist(vcf_dic, sample_names)
-
-    write_dist(snp_dist_dict, 'SNP', out_prefix)
-    write_dist(contig_dist_dict, 'Contig', out_prefix)
+    write_dist(snp_dist_dict, 'SNP', out_prefix, sample_names)
+    write_dist(contig_dist_dict, 'Contig', out_prefix, sample_names)
     print('\nvcf to matrix distances done!\n')
 
 

@@ -391,21 +391,16 @@ def manage_r_matrix(filter_keep_vcf_list):
 
     # if the matrix file are already present
     for filter_keep_vcf in filter_keep_vcf_list:
-
         for file in os.listdir(os.path.dirname(filter_keep_vcf)):
-
             if "_filtered_keep_SNP_dist.tsv" in file:
                 r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
                 jump = True
                 print("the matrix step is already done for {0}".format(filter_keep_vcf))
 
     if not jump:
-
         for filter_keep_vcf in filter_keep_vcf_list:
             vcf2dist.main(filter_keep_vcf)
-
             for file in os.listdir(os.path.dirname(filter_keep_vcf)):
-
                 if "_filtered_keep_SNP_dist.tsv" in file:
                     r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
 
@@ -429,24 +424,19 @@ def manage_make_tree(r_matrix_list, config_list):
             with open(r_matrix, "r") as conf:
                 reader = DictReader(conf, delimiter="\t")
                 headers = reader.fieldnames
-
                 # remove empty col
                 headers = list(filter(None, headers))
-
                 matrix = []
                 matrix_dict = {}
                 for row in reader:
-
                     line = []
                     for col in headers:
                         value = row[col]
                         line.append(value)
                     matrix.append(line)
-
                     key = row[""]
                     del row[""]
                     matrix_dict[key] = row
-
                 dm = DistanceMatrix(matrix, headers)
 
                 tree = nj(dm)
