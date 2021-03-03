@@ -45,9 +45,8 @@ def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_fil
     :param r2_seq_file: the R2 fastq file path
     :return: log message
     """
-    cmd = "{0} --cpus {1} --outdir {2} --reference {3} --R1 {4} --R2 {5} ".format(snippy_exe, threads, out_dir,
-                                                                                  ref_genome,
-                                                                                  r1_seq_file, r2_seq_file)
+    cmd = f"{snippy_exe} --cpus {threads} --outdir {out_dir} --reference {ref_genome} --R1 {r1_seq_file}" \
+          f" --R2 {r2_seq_file} "
     log_message = " ".join(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
@@ -68,10 +67,9 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     :return: nothing
     """
     if bed_file == "no file":
-        cmd = '{0} --ref {1} --prefix {2} {3}'.format(snippy_exe, ref_genome, prefix, snippy_folder)
+        cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} {snippy_folder}'
     else:
-        cmd = '{0} --ref {1} --prefix {2} --mask {3} {4}'.format(snippy_exe, ref_genome, prefix, bed_file,
-                                                                 snippy_folder)
+        cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} --mask {bed_file} {snippy_folder}'
     os.system(cmd)
 
 
@@ -108,18 +106,15 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                     break
 
         if not os.path.exists(os.path.dirname(out_dir)):
-            print("Path : {0}".format(os.path.dirname(out_dir)))
-            print("ERROR: the directory snippy for the strain {0} dont exist ! Exit!".format(row["strains"]))
+            print(f"Path : {out_dir}")
+            print(f"ERROR: the directory snippy for the strain {row['strains']} dont exist ! Exit!")
             exit(1)
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
-
         if ref_genome not in snippy_dir_dict:
             snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
             value_list = snippy_dir_dict[ref_genome]
-
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
-
             # update dict
             snippy_dir_dict[ref_genome] = value_list
 
@@ -148,13 +143,10 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir = os.path.join(result_dir, genome_name, row['strains'])
-
-        r1_seq_file = ""
-        r2_seq_file = ""
-
+        r1_seq_file = r2_seq_file = ""
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
         if not os.path.exists(ref_genome):
-            print("your reference genome file {0} don't exists or we haven't the permission\n".format(ref_genome))
+            print(f"your reference genome file {ref_genome} don't exists or we haven't the permission\n")
             print(usage)
             sys.exit()
 
@@ -164,8 +156,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
                     r1_seq_file = os.path.join(read_dir, strain)
 
                     if not os.path.exists(r1_seq_file):
-                        print("the fastq file {0} don't exists or we haven't the permission\n".format(
-                            r1_seq_file))
+                        print(f"the fastq file {r1_seq_file} don't exists or we haven't the permission\n")
                         print(usage)
                         sys.exit()
 
@@ -173,19 +164,18 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
                     r2_seq_file = os.path.join(read_dir, strain)
 
                     if not os.path.exists(r2_seq_file):
-                        print("the fastq file {0} don't exists or we haven't the permission\n".format(
-                            r2_seq_file))
+                        print(f"the fastq file {r2_seq_file} don't exists or we haven't the permission\n")
                         print(usage)
                         sys.exit()
 
         if not r1_seq_file:
-            print("The sequence file {0} is not found".format(r1_seq_file))
-            print("The program continue but without the strain  {0}".format(row['strains']))
+            print(f"The sequence file {r1_seq_file} is not found")
+            print(f"The program continue but without the strain  {row['strains']}")
             continue
 
         if not r2_seq_file:
-            print("The sequence file {0} is not found".format(r1_seq_file))
-            print("The program continue but without the strain  {0}".format(row['strains']))
+            print(f"The sequence file {r1_seq_file} is not found")
+            print(f"The program continue but without the strain  {row['strains']}")
             continue
 
         if ref_genome not in snippy_dir_dict:
@@ -203,12 +193,12 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
             p = multiprocessing.Process(
                 target=run_snippy,
                 args=(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_file),
-                name='snippy {0}'.format(row['strains'])
+                name=f'snippy {row["strains"]}'
             )
             jobs.append(p)
 
         else:
-            print("The snippy folder {0} already exist !".format(out_dir))
+            print(f"The snippy folder {out_dir} already exist !")
 
     job_list = []
     threshold = 3
@@ -269,28 +259,24 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
         run_snippy_core_custom(snippy_exe, genome_ref, prefix_snippy_core, bed_file, snippy_dirs)
 
     for file in os.listdir(core_genome_path):
-        if "{0}.vcf".format(name_dir) in file:
+        # rename header like the config file want
+        if f"{name_dir}.vcf" not in file:
+            continue
+        vcf_path = os.path.join(core_genome_path, file)
+        with open(vcf_path, "r") as vcf:
+            content = vcf.readlines()
+            for i, line in enumerate(content):
+                if "#CHROM" in line:
 
-            # rename header like the config file want
-            vcf_path = os.path.join(core_genome_path, file)
+                    for genome_ref, snippy_dir_list in snippy_dir_dict.items():
+                        for element in snippy_dir_list:
+                            line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
+                    content[i] = line
 
-            with open(vcf_path, "r") as vcf:
-
-                content = vcf.readlines()
-
-                for i, line in enumerate(content):
-                    if "#CHROM" in line:
-
-                        for genome_ref, snippy_dir_list in snippy_dir_dict.items():
-                            for element in snippy_dir_list:
-                                line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
-                        content[i] = line
-
-            with open(vcf_path, "w") as vcf_write:
-                for line in content:
-                    vcf_write.write(line)
-
-            vcf_list.append(vcf_path)
+        with open(vcf_path, "w") as vcf_write:
+            for line in content:
+                vcf_write.write(line)
+        vcf_list.append(vcf_path)
 
     return vcf_list
 
@@ -344,7 +330,7 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
         print(log_message)
 
         awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
-        cmd = "cat {0} | {1}".format(merge_bed_sort_file, awk_cmd)
+        cmd = f"cat {merge_bed_sort_file} | {awk_cmd}"
 
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
@@ -371,12 +357,11 @@ def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
             vcf_strain_folder_list.append(strain_dict["out_dir"])
 
     for vcf_core_file in filter_keep_vcf_list:
-        output_file = os.path.join(os.path.dirname(vcf_core_file),
-                                   "annotated_{0}".format(os.path.basename(vcf_core_file)))
+        output_file = os.path.join(os.path.dirname(vcf_core_file), f"annotated_{os.path.basename(vcf_core_file)}")
         if not os.path.exists(os.path.join(output_file)):
             annotate_vcf_snippy_core.main(vcf_core_file, vcf_strain_folder_list, output_file)
         else:
-            print("the annotation is already done for {0}".format(vcf_core_file))
+            print(f"the annotation is already done for {vcf_core_file}")
 
 
 def manage_r_matrix(filter_keep_vcf_list):
@@ -386,16 +371,14 @@ def manage_r_matrix(filter_keep_vcf_list):
     :return: a list of matrix file
     """
     r_matrix_list = []
-
     jump = False
-
     # if the matrix file are already present
     for filter_keep_vcf in filter_keep_vcf_list:
         for file in os.listdir(os.path.dirname(filter_keep_vcf)):
             if "_filtered_keep_SNP_dist.tsv" in file:
                 r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
                 jump = True
-                print("the matrix step is already done for {0}".format(filter_keep_vcf))
+                print(f"the matrix step is already done for {filter_keep_vcf}")
 
     if not jump:
         for filter_keep_vcf in filter_keep_vcf_list:
@@ -415,12 +398,9 @@ def manage_make_tree(r_matrix_list, config_list):
     :return: message
     """
     for r_matrix in r_matrix_list:
-
         filename_newick = "newick_tree.nwk"
         file_newick_path = os.path.join(os.path.dirname(r_matrix), filename_newick)
-
         if not os.path.exists(file_newick_path):
-
             with open(r_matrix, "r") as conf:
                 reader = DictReader(conf, delimiter="\t")
                 headers = reader.fieldnames
@@ -468,23 +448,23 @@ def manage_make_tree(r_matrix_list, config_list):
                 newick_str = tree.root_at_midpoint()
 
                 with open(file_newick_path, 'w') as out:
-                    out.write("{0}".format(newick_str))
+                    out.write(f"{newick_str}")
 
-                print("the newick generation step is done for {0}".format(r_matrix))
+                print(f"the newick generation step is done for {r_matrix}")
 
                 # make phyloxml file
                 file_phylo_xml_path = os.path.join(os.path.dirname(r_matrix), "phyloxml.xml")
 
                 Phylo.convert(file_newick_path, 'newick', file_phylo_xml_path, 'phyloxml')
-                print("the phyloxml generation step is done for {0}".format(r_matrix))
+                print(f"the phyloxml generation step is done for {r_matrix}")
 
                 # make extended phyloxml file for phyd3
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
 
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
-                print("the extended phyloxml generation step is done for {0}".format(r_matrix))
+                print(f"the extended phyloxml generation step is done for {r_matrix}")
         else:
-            print("the newick generation step is already done for {0}".format(r_matrix))
+            print(f"the newick generation step is already done for {r_matrix}")
 
 
 def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_list, matrix_dict):
@@ -698,7 +678,7 @@ def pre_main(args):
         sys.exit()
 
     if not os.path.exists(result_dir):
-        print("Result directory was created at '{0}'".format(result_dir))
+        print(f"Result directory was created at '{result_dir}'")
         os.makedirs(result_dir)
 
     main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection)
