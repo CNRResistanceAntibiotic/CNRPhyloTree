@@ -83,9 +83,11 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     """
     snippy_dir_dict = {}
 
+    print("config_list: ", config_list)
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir_root = os.path.join(result_dir, genome_name)
+        print("out_dir_root: ", out_dir_root)
         list_file = os.listdir(out_dir_root)
 
         out_dir = ""
