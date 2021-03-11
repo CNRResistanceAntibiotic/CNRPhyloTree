@@ -40,8 +40,6 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
                 chrom_use_dict[chrom] = list_val
             else:
                 chrom_use_dict[chrom] = [{"value": value, "strain_name": sample_names_s[0]}]
-
-    print(chrom_use_dict)
     for chrom in vcf_dic.keys():
         counter += 1
         records_filt = vcf_dic[chrom]
@@ -52,42 +50,44 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
             strain_name = sample_names_s[0]
         """
         if chrom in chrom_use_dict:
-            records = chrom_use_dict[chrom]["value"]
-            strain_name = chrom_use_dict[chrom]["strain_name"]
-            for record_filt in records_filt:
-                for record in records:
-                    if record_filt.CHROM == record.CHROM and record_filt.POS == record.POS:
-                        records.remove(record)
-                        out_dict = {}
-                        existed = False
-                        strain_name_split_list = strain_name.split("_")
-                        strain_name_clean = strain_name_split_list[2]
-                        for out_dict_l in out_dict_list:
-                            if out_dict_l:
-                                if out_dict_l["CHROM"] == record_filt.CHROM and out_dict_l["POS"] == record_filt.POS:
-                                    existed = True
-                                    out_dict = out_dict_l
-                                    continue
-                        if not existed:
-                            if "ANN" in record.INFO:
-                                out_dict["ANN"] = record.INFO["ANN"]
-                            out_dict["CHROM"] = record_filt.CHROM
-                            out_dict["POS"] = record_filt.POS
-                            out_dict["REF"] = record_filt.REF
-                            out_dict["ALT"] = record_filt.ALT
-                        if record_filt.genotype(strain_name_clean)['GT'] == 0:
-                            out_dict[strain_name_clean] = 0
-                            continue
-                        else:
-                            out_dict[strain_name_clean] = f"DP:{record.INFO['DP']};RO={record.INFO['RO']};" \
-                                                          f"RA={record.INFO['AO'][0]}({record.ALT[0]}/" \
-                                                          f"{record_filt.ALT[int(record_filt.genotype(strain_name_clean)['GT']) - 1]})"
-                        if out_dict:
+            print(chrom_use_dict[chrom])
+            for element in chrom_use_dict[chrom]:
+                records = element["value"]
+                strain_name = element["strain_name"]
+                for record_filt in records_filt:
+                    for record in records:
+                        if record_filt.CHROM == record.CHROM and record_filt.POS == record.POS:
+                            records.remove(record)
+                            out_dict = {}
+                            existed = False
+                            strain_name_split_list = strain_name.split("_")
+                            strain_name_clean = strain_name_split_list[2]
+                            for out_dict_l in out_dict_list:
+                                if out_dict_l:
+                                    if out_dict_l["CHROM"] == record_filt.CHROM and out_dict_l["POS"] == record_filt.POS:
+                                        existed = True
+                                        out_dict = out_dict_l
+                                        continue
                             if not existed:
-                                out_dict_list.append(out_dict)
-                            break
-                    else:
-                        continue
+                                if "ANN" in record.INFO:
+                                    out_dict["ANN"] = record.INFO["ANN"]
+                                out_dict["CHROM"] = record_filt.CHROM
+                                out_dict["POS"] = record_filt.POS
+                                out_dict["REF"] = record_filt.REF
+                                out_dict["ALT"] = record_filt.ALT
+                            if record_filt.genotype(strain_name_clean)['GT'] == 0:
+                                out_dict[strain_name_clean] = 0
+                                continue
+                            else:
+                                out_dict[strain_name_clean] = f"DP:{record.INFO['DP']};RO={record.INFO['RO']};" \
+                                                              f"RA={record.INFO['AO'][0]}({record.ALT[0]}/" \
+                                                              f"{record_filt.ALT[int(record_filt.genotype(strain_name_clean)['GT']) - 1]})"
+                            if out_dict:
+                                if not existed:
+                                    out_dict_list.append(out_dict)
+                                break
+                        else:
+                            continue
         else:
             continue
     out_dict_list = sorted(out_dict_list, key=lambda i: (i['CHROM'], i['POS']))
