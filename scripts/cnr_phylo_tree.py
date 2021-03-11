@@ -358,7 +358,9 @@ def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
         for strain_dict in vcf_snippy_list:
             vcf_strain_folder_list.append(strain_dict["out_dir"])
 
+    print("vcf_strain_folder_list: ", vcf_strain_folder_list)
     for vcf_core_file in filter_keep_vcf_list:
+        print("vcf_core_file: ",vcf_core_file)
         output_file = os.path.join(os.path.dirname(vcf_core_file), f"annotated_{os.path.basename(vcf_core_file)}")
         if not os.path.exists(os.path.join(output_file)):
             annotate_vcf_snippy_core.main(vcf_core_file, vcf_strain_folder_list, output_file)
