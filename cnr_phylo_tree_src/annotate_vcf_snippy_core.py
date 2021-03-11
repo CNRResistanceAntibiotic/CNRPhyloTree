@@ -35,7 +35,9 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
             vcf_file = os.path.join(vcf_folder, "snps.vcf")
             vcf_strain_dict, sample_names_s, count = read_vcf(vcf_file)
             strain_name = sample_names_s[0]
+            print(chrom)
             if chrom in vcf_strain_dict:
+                print(vcf_strain_dict[chrom])
                 records = vcf_strain_dict[chrom]
                 for record_filt in records_filt:
                     for record in records:
