@@ -50,7 +50,6 @@ def annotate_vcf(vcf_dic, sample_names, vcf_folder_list, annotate_vcf_snippy_cor
             strain_name = sample_names_s[0]
         """
         if chrom in chrom_use_dict:
-            print(chrom_use_dict[chrom])
             for element in chrom_use_dict[chrom]:
                 records = element["value"]
                 strain_name = element["strain_name"]

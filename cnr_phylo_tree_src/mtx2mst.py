@@ -58,7 +58,6 @@ def remove_duplicate(names, array):
     print("\nRemove duplicates: {0}\n".format(indexes))
     # print(dl_dic)
     arr = df.values
-
     names = list(df.index)
     return names, arr, legends
 
@@ -82,30 +81,22 @@ def load_matrix(mtx_file):
     #    data = csr_matrix(data)
     #    store column names, row names and data in mtx_dict dictionnary
     mtx_dict = {'names': names, 'matrix': data}
-
     return mtx_dict, legends
 
 
 def add_ST_label(config_file, legends, G, second_mlst):
-
     if config_file:
         config_list = load_config(config_file)
-
-        # print(G.nodes['output_snippy_CNR2218_ecoli_cgMLST_ref_2018_v1_ecoli'])
         for name_node, value in legends.items():
             for row_dict in config_list:
-
                 if 'MLST-2' in row_dict:
                     second_mlst = True
-
                 if row_dict['strains'] == name_node:
-
                     # attribute ST number to strain which have ST number precise in csv configuration file, attribute also name
                     if name_node in G.nodes:
-
                         try:
-                            G.nodes[name_node]['st-1'] = row_dict['MLST-1']
 
+                            G.nodes[name_node]['st-1'] = row_dict['MLST-1']
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = row_dict['MLST-2']
                         except KeyError:
@@ -113,13 +104,12 @@ def add_ST_label(config_file, legends, G, second_mlst):
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = ""
                             continue
+                        print(G.nodes[name_node])
                     else:
                         continue
                     break
-
                 elif row_dict['strains'] in value and "," in name_node:
                     if 'st-1' in G.nodes[name_node] and row_dict['MLST-1'] not in G.nodes[name_node]['st-1'].values():
-
                         G.nodes[name_node]['st-1'] = "*"
                         if second_mlst:
                             G.nodes[name_node]['st-2'] = "*"
@@ -128,14 +118,78 @@ def add_ST_label(config_file, legends, G, second_mlst):
                         if second_mlst:
                             G.nodes[name_node]['st-2'] = row_dict['MLST-2']
                         break
-
     else:
         for node in G.nodes:
             G.nodes[node]['st-1'] = ""
             if second_mlst:
                 G.nodes[node]['st-2'] = ""
-
     return G, second_mlst
+
+
+def color_node_by_date(config_file, g):
+    if config_file:
+        config_list = load_config(config_file)
+        for node in g.nodes():
+            for row_dict in config_list:
+                if node == row_dict["strains"]:
+                    if "2016" in row_dict["Date sample"]:
+                        g.nodes[node]['color'] = 'orange'
+                    if "2017" in row_dict["Date sample"]:
+                        g.nodes[node]['color'] = 'purple'
+                    if "2018" in row_dict["Date sample"]:
+                        g.nodes[node]['color'] = 'green'
+                    if "2019" in row_dict["Date sample"]:
+                        g.nodes[node]['color'] = 'pink'
+                    if "2020" in row_dict["Date sample"]:
+                        g.nodes[node]['color'] = 'blue'
+    return g
+
+
+def make_legend(g, plot, legends, second_mlst, source_node, source):
+    # option select legend
+    legend_node = []
+    for name, data in g.nodes(data=True):
+        circle = plot.circle(x=data['x'], y=data['y'], size=20, fill_color=data['bokeh_color'],
+                             muted_color=Viridis[10][3])
+        for key, value in legends.items():
+            if name == key:
+                legend_node.append((value, [circle]))
+                break
+            else:
+                pass
+
+    strain_label = plot.text(x='x', y='y', text_baseline='middle', text_align='center', text='index', muted_alpha=0,
+                             source=source_node)
+
+    if second_mlst:
+        st_label_1 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=-25, text='st-1',
+                               muted_alpha=0, source=source_node, text_color='orangered')
+        st_label_2 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=-10, text='st-2',
+                               muted_alpha=0, source=source_node, text_color='deepskyblue')
+    else:
+        st_label_1 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=-10, text='st-1',
+                               muted_alpha=0, source=source_node, text_color='orangered')
+
+    snp_label = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=10, text='dist',
+                          text_font='times', text_font_style='italic', text_font_size='10pt', muted_alpha=0,
+                          source=source)
+    if second_mlst:
+        legend = Legend(
+            items=[
+                ('Strain Name', [strain_label]),
+                ('ST Number 1', [st_label_1]),
+                ('ST Number 2', [st_label_2]),
+                ('SNP difference', [snp_label])
+            ],
+            location=(10, 0)
+        )
+    else:
+        legend = Legend(
+            items=[('Strain Name', [strain_label]), ('ST Number', [st_label_1]), ('SNP difference', [snp_label])],
+            location=(10, 0)
+        )
+    legend.click_policy = 'mute'
+    return legend
 
 
 def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
@@ -147,14 +201,12 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     :param st_file: The path of a configuration file that associate strain with their ST number
     :return:
     """
-
     e = []
     #    Create an empty graph
     G = nx.Graph()
+
     G.add_nodes_from(mtx_dic['names'])
-
     matrix = mtx_dic['matrix'].tolist()
-
     second_mlst = False
 
     # add ST Label
@@ -180,7 +232,6 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
             else:
                 e.append((parent, mtx_dic['names'][m],
                           {'weight': matrix[n][m], "color": 'grey', 'width': 1, 'alpha': 0.8}))
-
             m += 1
         n += 1
         G.add_edges_from(e)
@@ -198,35 +249,28 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
 
     # with the coordinate xy of pos attribute the coordinate x and y to each strain
     for i in pos:
-        # xode[i] = pos[i][0]
-        # yode[i] = pos[i][1]
         g.nodes[i]['x'] = pos[i][0]
         g.nodes[i]['y'] = pos[i][1]
 
     for start, end in g.edges():
-        # print(g.nodes[start]['x'])
         g.edges[start, end]['xector'] = np.array([g.nodes[start]['x'], g.nodes[end]['x']])
         g.edges[start, end]['yector'] = np.array([g.nodes[start]['y'], g.nodes[end]['y']])
     # print(g.nodes.data('st'))
 
     # attribute a color in function of SNP number with the strain which are the closest
     for node in g.nodes():
-        # print(g[node])
         for key in g[node]:
             if node == "Reference":
                 g.nodes[node]['color'] = 'green'
-
             else:
                 if g[node][key]['color'] == 'red':
                     g.nodes[node]['color'] = 'red'
-
                 elif g[node][key]['color'] == 'dark-yellow':
                     try:
                         if g.nodes[node]['color'] != 'red':
                             g.nodes[node]['color'] = 'dark-yellow'
                     except KeyError:
                         g.nodes[node]['color'] = 'dark-yellow'
-
                 elif g[node][key]['color'] == 'light-yellow':
                     try:
                         if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'dark-yellow':
@@ -235,7 +279,6 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                     except KeyError:
                         # print(g[node][key])
                         g.nodes[node]['color'] = 'light-yellow'
-
                 else:
                     try:
                         if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'dark-yellow' \
@@ -244,13 +287,12 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                     except KeyError:
                         g.nodes[node]['color'] = 'grey'
 
-    # print(g.nodes[node], " nd \n")
+    # color node by date
+    #g = color_node_by_date(config_file, g)
 
     bokeh_node_color = color_converter(nx.get_node_attributes(g, 'color'))
-    # print(bokeh_node_color)
     nx.set_node_attributes(g, bokeh_node_color, 'bokeh_color')
     bokeh_edge_color = color_converter(nx.get_edge_attributes(g, 'color'))
-    # print(bokeh_edge_color)
     nx.set_edge_attributes(g, bokeh_edge_color, 'bokeh_color')
 
     # create a dictionary with the st number of each strain
@@ -268,10 +310,9 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
         e['start'] = a
         e['end'] = z
         bokeh_edge.append(e)
-    # print(bokeh_edge)
-    # print(pd.DataFrame.from_dict({k: v for k, v in g.nodes(data=True)}, orient='index'))
 
     source_node = ColumnDataSource(pd.DataFrame.from_dict({k: v for k, v in g.nodes(data=True)}, orient='index'))
+
     source_edge = ColumnDataSource(pd.DataFrame.from_dict(bokeh_edge))
 
     x_edge = []
@@ -292,94 +333,21 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     except KeyError:
         plot.title.text = "Strain network in function of SNP difference (Total SNP : {0}) ".format(count_snp_keep)
 
-    plot.multi_line(xs='xector', ys='yector', line_color='bokeh_color',
-                    line_width='width', line_alpha='alpha', source=source_edge)
+    plot.multi_line(xs='xector', ys='yector', line_color='bokeh_color', line_width='width', line_alpha='alpha',
+                    source=source_edge)
 
-    # option select legend
-    legend_node = []
-    for name, data in g.nodes(data=True):
-        circle = plot.circle(x=data['x'], y=data['y'], size=20, fill_color=data['bokeh_color'],
-                             muted_color=Viridis[10][3])
-        for key, value in legends.items():
-            if name == key:
-                legend_node.append((value, [circle]))
-                break
-            else:
-                pass
-
-    strain_label = plot.text(x='x', y='y', text_baseline='middle', text_align='center', text='index',
-                             muted_alpha=0, source=source_node)
-
-    if second_mlst:
-        st_label_1 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center',
-                               y_offset=-25, text='st-1',
-                               muted_alpha=0, source=source_node, text_color='orangered')
-        st_label_2 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center',
-                         y_offset=-10, text='st-2',
-                         muted_alpha=0, source=source_node, text_color='deepskyblue')
-    else:
-        st_label_1 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center',
-                               y_offset=-10, text='st-1',
-                               muted_alpha=0, source=source_node, text_color='orangered')
-
-    snp_label = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=10,
-                          text='dist', text_font='times', text_font_style='italic', text_font_size='10pt',
-                          muted_alpha=0, source=source)
-
-    if second_mlst:
-        """
-        legend = Legend(
-            items=[
-                      ('Strain Name', [strain_label]),
-                      ('ST Number 1', [st_label_1]),
-                      ('ST Number 2', [st_label_2]),
-                      ('SNP difference', [snp_label])
-                  ] + legend_node,
-            antibiotic=(10, 0)
-        )
-        """
-        legend = Legend(
-            items=[
-                      ('Strain Name', [strain_label]),
-                      ('ST Number 1', [st_label_1]),
-                      ('ST Number 2', [st_label_2]),
-                      ('SNP difference', [snp_label])
-                  ],
-            location=(10, 0)
-        )
-    else:
-        """
-        legend = Legend(
-            items=[
-                      ('Strain Name', [strain_label]),
-                      ('ST Number', [st_label_1]),
-                      ('SNP difference', [snp_label])
-                  ] + legend_node,
-            antibiotic=(10, 0)
-        )
-        """
-        legend = Legend(
-            items=[
-                      ('Strain Name', [strain_label]),
-                      ('ST Number', [st_label_1]),
-                      ('SNP difference', [snp_label])
-                  ],
-            location=(10, 0)
-        )
-
-    legend.click_policy = 'mute'
+    legend = make_legend(g, plot, legends, second_mlst, source_node, source)
     plot.add_layout(legend, 'right')
+
     output_file(graph_name)
     # -------
     save(plot)
 
 
 def load_config(config_file):
-
     with open(config_file, "r") as conf:
         reader = DictReader(conf, delimiter=",")
         config_list = list(reader)
-
     return config_list
 
 
@@ -389,7 +357,6 @@ def color_converter(colors):
     :param colors: it is a dictionary of color associate with indices of nodes or edges or ...
     :return: A dictionary of color in 'bokeh format' associate with indices of nodes, edges or ...
     """
-
     for color in colors:
         if colors[color] == 'green':
             colors[color] = RYG[10][1]
