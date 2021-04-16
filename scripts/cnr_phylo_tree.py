@@ -265,8 +265,13 @@ def manage_pre_filter_snp(vcf_path):
     :return: a list of vcf filtered file
     """
     out_prefix = "pre-filter"
-    vcf_path_pre_filter = pre_filter_SNP_density.main(vcf_path, out_prefix)
-    return vcf_path_pre_filter
+    dir_name_path = os.path.dirname(vcf_path)
+    name_file_vcf_input = os.path.basename(os.path.splitext(vcf_path)[0])
+    name_output_file = out_prefix + "_" + name_file_vcf_input
+    out_vcf_file = os.path.join(dir_name_path, name_output_file + "_pre-keep.vcf")
+    out_vcf_unkeep_file = os.path.join(dir_name_path, name_output_file + "_pre-unkeep.vcf")
+    pre_filter_SNP_density.main(vcf_path, out_vcf_file, out_vcf_unkeep_file)
+    return out_vcf_file
 
 
 def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):

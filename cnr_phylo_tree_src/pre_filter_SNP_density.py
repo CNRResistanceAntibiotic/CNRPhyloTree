@@ -107,17 +107,12 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
 
 def pre_main(args):
     vcf_file = os.path.abspath(args.vcf)
-    out_prefix = args.outPrefix
-    main(vcf_file, out_prefix)
+    out_vcf_file = args.out_vcf_file
+    out_vcf_unkeep_file = args.out_vcf_unkeep_file
+    main(vcf_file, out_vcf_file, out_vcf_unkeep_file)
 
 
-def main(vcf_file, out_prefix):
-    dir_name_path = os.path.dirname(vcf_file)
-    name_file_vcf_input = os.path.basename(os.path.splitext(vcf_file)[0])
-
-    name_output_file = out_prefix + "_" + name_file_vcf_input
-    out_vcf_file = os.path.join(dir_name_path, name_output_file + "_pre-keep.vcf")
-    out_vcf_unkeep_file = os.path.join(dir_name_path, name_output_file + "_pre-unkeep.vcf")
+def main(vcf_file, out_vcf_file, out_vcf_unkeep_file):
 
     print("\nDATE: ", datetime.datetime.now())
 
@@ -147,7 +142,8 @@ def version():
 def run():
     parser = argparse.ArgumentParser(description='VCFPreFilterSNPDensity- Version ' + version())
     parser.add_argument('-v', '--vcf', dest="vcf", default='test.vcf', help='vcf file [snps.recode.vcf]')
-    parser.add_argument('-o', '--out', dest="outPrefix", default='', help='output prefix')
+    parser.add_argument('-o', '--out', dest="out_vcf_file", default='', help='output kepp')
+    parser.add_argument('-ou', '--outunkeep', dest="out_vcf_unkeep_file", default='', help='output unkeep')
     parser.add_argument('-V', '--version', action='version', version='VCFPreFilterSNPDensity-' + version(),
                         help="Prints version number")
     args = parser.parse_args()
