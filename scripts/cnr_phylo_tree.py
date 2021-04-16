@@ -17,7 +17,7 @@ from Bio import Phylo
 from skbio import DistanceMatrix
 from skbio.tree import nj
 
-from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core
+from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density
 import xml.etree.ElementTree as ET
 
 
@@ -50,9 +50,7 @@ def run_snippy(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_fil
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
     log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-
     print(log_message)
-
     return log_message
 
 
@@ -81,22 +79,17 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     :return: hash table of snippy directory
     """
     snippy_dir_dict = {}
-
     print("config_list: ", config_list)
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir_root = os.path.join(result_dir, genome_name)
         print("out_dir_root: ", out_dir_root)
         list_file = os.listdir(out_dir_root)
-
         out_dir = ""
-
         for file in list_file:
             file_path = os.path.join(out_dir_root, file)
-
-            if "_" in file:
-
-                file_split = file.split("_")
+            if "_" in str(file):
+                file_split = str(file).split("_")
                 for file_part in file_split:
                     if row["strains"] == file_part and os.path.isdir(file_path):
                         out_dir = file_path
@@ -105,7 +98,6 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                 if row["strains"] == file and os.path.isdir(file_path):
                     out_dir = file_path
                     break
-
         if not os.path.exists(os.path.dirname(out_dir)):
             print(f"Path : {out_dir}")
             print(f"ERROR: the directory snippy for the strain {row['strains']} dont exist ! Exit!")
@@ -118,7 +110,6 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-
     return snippy_dir_dict
 
 
@@ -132,15 +123,11 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
     :return: hash table of snippy directory
     """
     print("\n")
-
     snippy_exe = "snippy"
     threads = 8
-
     strain_list = os.listdir(read_dir)
-
     snippy_dir_dict = {}
     jobs = []
-
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir = os.path.join(result_dir, genome_name, row['strains'])
@@ -150,61 +137,47 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
             print(f"your reference genome file {ref_genome} don't exists or we haven't the permission\n")
             print(usage)
             sys.exit()
-
         for strain in strain_list:
             if row['strains'] + "_" in strain:
                 if "R1" in strain:
                     r1_seq_file = os.path.join(read_dir, strain)
-
                     if not os.path.exists(r1_seq_file):
                         print(f"the fastq file {r1_seq_file} don't exists or we haven't the permission\n")
                         print(usage)
                         sys.exit()
-
                 if "R2" in strain:
                     r2_seq_file = os.path.join(read_dir, strain)
-
                     if not os.path.exists(r2_seq_file):
                         print(f"the fastq file {r2_seq_file} don't exists or we haven't the permission\n")
                         print(usage)
                         sys.exit()
-
         if not r1_seq_file:
             print(f"The sequence file {r1_seq_file} is not found")
             print(f"The program continue but without the strain  {row['strains']}")
             continue
-
         if not r2_seq_file:
             print(f"The sequence file {r1_seq_file} is not found")
             print(f"The program continue but without the strain  {row['strains']}")
             continue
-
         if ref_genome not in snippy_dir_dict:
             snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
             value_list = snippy_dir_dict[ref_genome]
-
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
-
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-
         if not os.path.exists(out_dir):
-
             p = multiprocessing.Process(
                 target=run_snippy,
                 args=(snippy_exe, threads, out_dir, ref_genome, r1_seq_file, r2_seq_file),
                 name=f'snippy {row["strains"]}'
             )
             jobs.append(p)
-
         else:
             print(f"The snippy folder {out_dir} already exist !")
-
     job_list = []
     threshold = 3
     count = 1
-
     # launch and wait multiple jobs
     for job in jobs:
         job_list.append(job)
@@ -221,15 +194,12 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
                 job_list = []
                 count = 0
         count += 1
-
     # launch rest of jobs
     for job in jobs:
         job.start()
-
     # wait rest of jobs
     for job in jobs:
         job.join()
-
     return snippy_dir_dict
 
 
@@ -237,28 +207,22 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
     """
     This function run snippy-core
     :param snippy_dir_dict: the hash of snippy directory
-    :return: a vcf file list
+    :return: a vcf file
     """
-
     snippy_exe = "snippy-core"
     name_dir = "core_genome"
-
+    vcf_path = ""
     vcf_list = []
     print("\n")
-
     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
-
         snippy_dirs = ""
         for element in snippy_dir_list:
             snippy_dirs = snippy_dirs + " " + element["out_dir"]
-
         # case with only one sample that is not respectable !
         if len(snippy_dir_list) == 1:
             continue
-
         prefix_snippy_core = os.path.join(core_genome_path, name_dir)
         run_snippy_core_custom(snippy_exe, genome_ref, prefix_snippy_core, bed_file, snippy_dirs)
-
     for file in os.listdir(core_genome_path):
         # rename header like the config file want
         if f"{name_dir}.vcf" not in file:
@@ -268,46 +232,45 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
             content = vcf.readlines()
             for i, line in enumerate(content):
                 if "#CHROM" in line:
-
                     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
                         for element in snippy_dir_list:
                             line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
                     content[i] = line
-
         with open(vcf_path, "w") as vcf_write:
             for line in content:
                 vcf_write.write(line)
-        vcf_list.append(vcf_path)
-
-    return vcf_list
+    return vcf_path
 
 
-def manage_filter_snp(vcf_list):
+def manage_filter_snp(vcf_path, min_dist, type_matrice):
     """
     This function launch the filtering of the vcf files
-    :param vcf_list: a list of vcf file
     :return: a list of vcf filtered file
     """
-    min_dist = 20
     out_prefix = "filter"
     filter_keep_vcf_list = []
-    for vcf_core_file in vcf_list:
-        if not os.path.exists(os.path.join(os.path.dirname(vcf_core_file),
-                                           out_prefix + "_" +
-                                           str(os.path.basename(vcf_core_file).split(".vcf")[0]) +
-                                           "_density_filtered_keep.vcf")):
-            filter_SNP_density.main(min_dist, vcf_core_file, out_prefix)
-        else:
-            print(f"the filtration is already done for {vcf_core_file}")
-        for file in os.listdir(os.path.dirname(vcf_core_file)):
-            if "_filtered_keep.vcf" in file:
-                filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_core_file), file))
+    if not os.path.exists(os.path.join(os.path.dirname(vcf_path), out_prefix + "_" + str(os.path.basename(vcf_path).split(".vcf")[0]) + "_density_filtered_keep.vcf")):
+        filter_SNP_density.main(min_dist, vcf_path, out_prefix, type_matrice)
+    else:
+        print(f"the filtration is already done for {vcf_path}")
+    for file in os.listdir(os.path.dirname(vcf_path)):
+        if "_filtered_keep.vcf" in file:
+            filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_path), file))
     return filter_keep_vcf_list
+
+
+def manage_pre_filter_snp(vcf_path):
+    """
+    This function launch the pre-filtering of the vcf files
+    :return: a list of vcf filtered file
+    """
+    out_prefix = "pre-filter"
+    vcf_path_pre_filter = pre_filter_SNP_density.main(vcf_path, out_prefix)
+    return vcf_path_pre_filter
 
 
 def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
     low_cov_file_list = []
-
     merge_bed_file = os.path.join(snippy_core_genome_folder, "merged_bed_file.bed")
     merge_bed_sort_file = os.path.join(snippy_core_genome_folder, "merged_bed_sort_file.bed")
     for genome_ref, strain_snippy_list in snippy_dir_dict.items():
@@ -323,19 +286,14 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-
         print(log_message)
-
         awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
         cmd = f"cat {merge_bed_sort_file} | {awk_cmd}"
-
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\nCOUNT:' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-
         print(log_message)
-
         return merge_bed_sort_file
     else:
         return "no file"
@@ -352,7 +310,6 @@ def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
     for genome_ref, vcf_snippy_list in snippy_dir_dict.items():
         for strain_dict in vcf_snippy_list:
             vcf_strain_folder_list.append(strain_dict["out_dir"])
-
     print("vcf_strain_folder_list: ", vcf_strain_folder_list)
     for vcf_core_file in filter_keep_vcf_list:
         print("vcf_core_file: ",vcf_core_file)
@@ -363,7 +320,7 @@ def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
             print(f"the annotation is already done for {vcf_core_file}")
 
 
-def manage_r_matrix(filter_keep_vcf_list):
+def manage_r_matrix(filter_keep_vcf_list, type_matrice):
     """
     This function launch the matrix calculation
     :param filter_keep_vcf_list: a list of vcf filtered
@@ -378,10 +335,9 @@ def manage_r_matrix(filter_keep_vcf_list):
                 r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
                 jump = True
                 print(f"the matrix step is already done for {filter_keep_vcf}")
-
     if not jump:
         for filter_keep_vcf in filter_keep_vcf_list:
-            vcf2dist.main(filter_keep_vcf)
+            vcf2dist.main(filter_keep_vcf, type_matrice)
             for file in os.listdir(os.path.dirname(filter_keep_vcf)):
                 if "_filtered_keep_SNP_dist.tsv" in file:
                     r_matrix_list.append(os.path.join(os.path.dirname(filter_keep_vcf), file))
@@ -443,23 +399,16 @@ def manage_make_tree(r_matrix_list, config_list):
                 newick_str = upgmatree_rooted_at_midpoint
                 
                 """
-
                 newick_str = tree.root_at_midpoint()
-
                 with open(file_newick_path, 'w') as out:
                     out.write(f"{newick_str}")
-
                 print(f"the newick generation step is done for {r_matrix}")
-
                 # make phyloxml file
                 file_phylo_xml_path = os.path.join(os.path.dirname(r_matrix), "phyloxml.xml")
-
                 Phylo.convert(file_newick_path, 'newick', file_phylo_xml_path, 'phyloxml')
                 print(f"the phyloxml generation step is done for {r_matrix}")
-
                 # make extended phyloxml file for phyd3
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
-
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
         else:
@@ -477,14 +426,8 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     """
     strain_label_list = []
     strain_list = []
-
-    pivot_mlst_1 = False
-    pivot_mlst_2 = False
-    pivot_date_sample = False
-    pivot_location = False
-
+    pivot_mlst_1 = pivot_mlst_2 = pivot_date_sample = pivot_location = False
     for dict_config in config_list:
-
         if dict_config.get("MLST-1"):
             pivot_mlst_1 = True
         if dict_config.get("MLST-2"):
@@ -493,7 +436,6 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
             pivot_date_sample = True
         if dict_config.get("Location"):
             pivot_location = True
-
     with open(file_phyloxml_path, 'r') as xml_very_uggly:
         content = xml_very_uggly.readlines()
         for n, line in enumerate(content):
@@ -505,14 +447,9 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                 if strain[0].isnumeric():
                     strain = "s" + strain
                 strain_label_list.append(strain)
-
     xml_string = "".join(content)
-
     tree = ET.ElementTree(ET.fromstring(xml_string))
     root = tree.getroot()
-
-    ################################################
-    # adding Label
 
     # adding an element to the root node
     labels = ET.SubElement(root, "labels")
@@ -525,25 +462,21 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = "ST-1"
         ET.SubElement(label, "data", tag="ST-1")
-
     # ST 2
     if pivot_mlst_2:
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = "ST-2"
         ET.SubElement(label, "data", tag="ST-2")
-
     # Date sample
     if pivot_date_sample:
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = "Date sample"
         ET.SubElement(label, "data", tag="Date-sample")
-
     # Location
     if pivot_location:
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = "antibiotic"
         ET.SubElement(label, "data", tag="antibiotic")
-
     for strain in strain_label_list:
         label = ET.SubElement(labels, "label", attrib)
         ET.SubElement(label, "name", show="1").text = strain
@@ -551,15 +484,11 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
 
     #######################################
     # add labels
-
     leaf = './{http://www.phyloxml.org}phylogeny/{http://www.phyloxml.org}clade'
-
     resu_dict = get_dict_strain_et(root, leaf, {}, [])
-
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
             if config_dict.get("strains") == strain:
-
                 if pivot_mlst_1:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
                 if pivot_mlst_2:
@@ -568,23 +497,18 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
                     ET.SubElement(leaf, "{http://www.phyloxml.org}Date-sample").text = config_dict.get("Date sample")
                 if pivot_location:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}antibiotic").text = config_dict.get("Location")
-
                 for n, strain_label in enumerate(strain_label_list):
                     ET.SubElement(leaf, ("{http://www.phyloxml.org}"+strain_label)).text =\
                         str(matrix_dict.get(strain).get(strain_list[n]))
-
                 break
             else:
                 continue
-
     ################################################
     tree.write(file_ext_phyloxml_path, encoding="utf-8")
     ############
     # make xml pretty
-
     xml_str = minidom.parse(file_ext_phyloxml_path).toprettyxml(indent="   ")
     xml_str = xml_str.replace('phy:', '')
-    
     with open(file_ext_phyloxml_path, "w") as f:
         f.write(xml_str)
 
@@ -598,12 +522,10 @@ def get_dict_strain_et(root, leaf, resu_dict, leaf_done_list):
     :param leaf_done_list: the list of leaf done in tree
     :return: the result dict
     """
-
     if leaf not in leaf_done_list:
         if root.findall(leaf):
             for clade in root.findall(leaf):
                 name = clade.find('{http://www.phyloxml.org}name')
-
                 if name is not None and clade.find('{http://www.phyloxml.org}name').text == "root":
                     resu_dict = get_dict_strain_et(root, leaf + "/" + clade.tag, resu_dict, leaf_done_list)
                 elif name is not None:
@@ -624,10 +546,8 @@ def manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list):
     """
     for mtx_file in r_matrix_list:
         graph_name = os.path.join(os.path.dirname(mtx_file), "SNP_network.html")
-
         with open(filter_keep_vcf_list[0]) as f:
             count_snp_keep = sum(1 for line in f) - 6
-
         mtx2mst.main(mtx_file, graph_name, config_file, count_snp_keep)
 
 
@@ -637,53 +557,52 @@ def pre_main(args):
     :param args: the arguments
     :return: the arguments
     """
-    read_dir = geno_ref_dir = result_dir = config_file = ""
-    jump_snippy_detection = False
-
+    read_dir = geno_ref_dir = result_dir = config_file = type_matrice = ""
+    min_dist = 0
+    jump_snippy_detection = filter_homogeneous_SNP = False
     if args.repRead:
         read_dir = os.path.abspath(args.repRead)
-
     if args.genomeRef:
         geno_ref_dir = os.path.abspath(args.genomeRef)
-
     if args.repResult:
         result_dir = os.path.abspath(args.repResult)
-
     if args.config:
         config_file = os.path.abspath(args.config)
-
     if args.Already:
         jump_snippy_detection = args.Already
-
     if not jump_snippy_detection:
         if not os.path.exists(read_dir):  # if the folder of reads exist, continue
             print("your path of directory reads don't exists or we haven't the permission\n")
             print(usage)
             sys.exit()
-
     if not os.path.exists(geno_ref_dir):  # if the folder of genome exist, continue
         print("your reference genome directory don't exists or we haven't the permission\n")
         print(usage)
         sys.exit()
-
     elif not os.path.isdir(geno_ref_dir):
         print("""\nYou have enter a file and not the folder which contain genome(s),
                 with the option configfile it isn't right\n""")
         sys.exit()
-
     if not os.path.exists(config_file):  # if the folder of genome exist, continue
         print("your config file don't exists or we haven't the permission\n")
         print(usage)
         sys.exit()
-
     if not os.path.exists(result_dir):
         print(f"Result directory was created at '{result_dir}'")
         os.makedirs(result_dir)
+    if args.FilterHomogeneousSNP:
+        filter_homogeneous_SNP = args.FilterHomogeneousSNP
+    if args.minimum_distance:
+        min_dist = args.minimum_distance
+    if args.type_matrice:
+        type_matrice = args.type_matrice
 
-    main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection)
+    main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, jump_snippy_detection,
+         filter_homogeneous_SNP)
 
 
-def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=False):
+def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, jump_snippy_detection=False,
+         filter_homogeneous_SNP=False):
     """
     This make a configuration file with argument for launch of snakemake
     :param jump_snippy_detection:
@@ -692,8 +611,14 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
     :param result_dir:
     :param config_file:
     """
-    config_list = load_config(config_file)
 
+    print("#################\n")
+    print(f"Jump Snippy Detection : {jump_snippy_detection} \n")
+    print("#################\n")
+    print(f"Filter Homogeneous SNP : {filter_homogeneous_SNP} \n")
+    print("#################\n")
+
+    config_list = load_config(config_file)
     if not jump_snippy_detection:
         # snippy
         print("\nStart Snippy")
@@ -704,51 +629,49 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, jump_snippy_detection=
         print("Skip Snippy Detection")
         snippy_dir_dict = get_snippy_dir(geno_ref_dir, result_dir, config_list)
         print("*********************************************")
-
     name_dir = "core_genome"
+    snippy_core_genome_folder = ""
     for geno_ref, snippy_dir_list in snippy_dir_dict.items():
         snippy_core_genome_folder = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
         break
-
     if not os.path.exists(snippy_core_genome_folder):
         os.makedirs(snippy_core_genome_folder)
-
     # filter by low coverage
     print("\nStart load filter by low coverage")
     bed_file = read_low_coverage(snippy_dir_dict, snippy_core_genome_folder)
     print("\nEnd load filter by low coverage")
     print("*********************************************")
-
     # snippy_core
     print("\nStart Snippy-core")
-    vcf_list = manage_snippy_core(snippy_dir_dict, snippy_core_genome_folder, bed_file)
+    vcf_path = manage_snippy_core(snippy_dir_dict, snippy_core_genome_folder, bed_file)
     print("End Snippy-core")
     print("*********************************************")
-
+    # pre-filter SNP
+    if filter_homogeneous_SNP:
+        print("\nStart pre-filtering SNP")
+        vcf_path = manage_pre_filter_snp(vcf_path)
+        print("End pre-filtering SNP")
+        print("*********************************************")
     # filter SNP
     print("\nStart filtering SNP")
-    filter_keep_vcf_list = manage_filter_snp(vcf_list)
+    filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
     print("End filtering SNP")
     print("*********************************************")
-
     # annotated filter SNP
     print("\nStart annotate filtering SNP")
     manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
     print("End annotate filtering SNP")
     print("*********************************************")
-
     # R_matrix
     print("\nStart distance matrix")
-    r_matrix_list = manage_r_matrix(filter_keep_vcf_list)
+    r_matrix_list = manage_r_matrix(filter_keep_vcf_list, type_matrice)
     print("End distance matrix")
     print("*********************************************")
-
     # Make tree
     print("\nStart make tree")
     manage_make_tree(r_matrix_list, config_list)
     print("End make tree")
     print("*********************************************")
-
     # networkX
     print("\nStart networkX")
     manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
@@ -760,27 +683,32 @@ def run():
     Take the argument of the command and give a variable for this
     :return: args
     """
-
     global usage
-
     usage = "CNR Phylo tree is a snakemake based program"
-
     parser = argparse.ArgumentParser(
         description="This program make a phylogenetic tree with NGS sequence reads and one or more reference genome")
-    parser.add_argument('-i', '--repRead', dest="repRead", default='',
-                        help='Enter the path of the directory which contain your fasta/fastq/fas/fa(.gz) reads')
+    parser.add_argument('-i', '--repRead', dest="repRead", default='', help='Enter the path of the directory which'
+                                                                            ' contain your fasta/fastq/fas/fa(.gz)'
+                                                                            ' reads')
     parser.add_argument('-o', '--repResult', dest="repResult", default='',
-                        help="""Enter the path of your directory where you want your result (without other result or
-                        risk of nothing that will be done)""")
+                        help="Enter the path of your directory where you want your result (without other result or"
+                             " risk of nothing that will be done)")
     parser.add_argument('-g', '--repGenomeRef', dest="genomeRef", default='',
-                        help="""Enter the path of directory with reference genome
-                        (if no configfile enter the path to your reference genome)""")
-    parser.add_argument('-c', '--config', dest="config", default='', help="Enter the path of your csv file which "
-                                                                          "config the association of genome with "
-                                                                          "strain (help of csv2json.py for see how "
-                                                                          "make this csv file)")
+                        help="Enter the path of directory with reference genome (if no configfile enter the path to"
+                             " your reference genome)")
+    parser.add_argument('-c', '--config', dest="config", default='',
+                        help="Enter the path of your csv file which config the association of genome with"
+                             "strain (help of csv2json.py for see how make this csv file)")
+    parser.add_argument('-md', '--minimum_distance', dest="minimum_distance", default=20,
+                        help="The minimum distance between 2 SNP to consider as recombinant.")
+    parser.add_argument('-tm', '--type_matrice', dest="type_matrice", default="absolu",
+                        help="The mode of computation of the distance matrice. [absolu, relatif, relatif-norm]"
+                             " (default: absolu)")
     parser.add_argument('-p', '--SnippyAlreadyDone', dest="Already", action='store_true', default=False,
                         help="Indicate if all snippy detection are already done (default: False)")
+    parser.add_argument('-f1', '--FilterHomogeneousSNP', dest="FilterHomogeneousSNP",
+                        action='store_true', default=False,
+                        help="Allow to filter homogeneous SNP before filtering (default: False)")
 
     args = parser.parse_args()
     pre_main(args)
