@@ -31,7 +31,7 @@ def read_vcf(vcf_file, not_snp_dict):
     return vcf_dic, sample_names, not_snp_dict
 
 
-def read_with_min_dist_vcf(vcf_file, threshold, type_matrice):
+def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
     print(f"\nRead vcf file {vcf_file}")
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
     sample_names = vcf_reader.samples
@@ -63,7 +63,7 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrice):
                 snp_hash = update_vcf_hash(snp_hash, sample_names, threshold)
                 # class snp to keep or unkeep
                 for pos in snp_hash:
-                    keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrice)
+                    keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
                     if keep_list:
                         vcf_keep_list.append(keep_list)
                     if unkeep_list:
@@ -83,7 +83,7 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrice):
     # class snp to keep or unkeep
     for pos in snp_hash:
 
-        keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrice)
+        keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
         if keep_list:
             vcf_keep_list.append(keep_list)
         if unkeep_list:
@@ -126,7 +126,7 @@ def update_vcf_hash(snp_hash, sample_names, threshold):
     return snp_hash
 
 
-def class_vcf(var_list, type_matrice):
+def class_vcf(var_list, type_matrix):
     """
     This function classify the snp in two list : keep and unkeep
     :param var_list: a snp in list format.
@@ -140,9 +140,9 @@ def class_vcf(var_list, type_matrice):
     if "X" in var_list[4]:
         vcf_unkeep_list = var_list
     elif "N" in var_list[4]:
-        if "absolu" == type_matrice:
+        if "absolu" == type_matrix:
             vcf_unkeep_list = var_list
-        elif "relatif" == type_matrice or "relatif-norm" == type_matrice:
+        elif "relatif" == type_matrix or "relatif-norm" == type_matrix:
             vcf_keep_list = var_list
     # case with only the same allele is found on vcf entry -> unkeep
     elif len(res_set) == 1:
@@ -204,14 +204,14 @@ def pre_main(args):
     min_dist = int(args.mindist)
     vcf_file = os.path.abspath(args.vcf)
     out_prefix = args.outPrefix
-    type_matrice = args.type_matrice
-    main(min_dist, vcf_file, out_prefix, type_matrice)
+    type_matrix = args.type_matrice
+    main(min_dist, vcf_file, out_prefix, type_matrix)
 
 
-def main(min_dist, vcf_file, out_prefix, type_matrice):
+def main(min_dist, vcf_file, out_prefix, type_matrix):
 
     print(f"\nSNP density threshold: 2 SNPs for {min_dist} base(s)")
-
+    min_dist = int(min_dist)
     dir_name_path = os.path.dirname(vcf_file)
     name_file_vcf_input = os.path.basename(os.path.splitext(vcf_file)[0])
 
@@ -225,7 +225,7 @@ def main(min_dist, vcf_file, out_prefix, type_matrice):
 
     print("\nDATE: ", datetime.datetime.now())
 
-    vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, type_matrice)
+    vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
     print("\nDATE: ", datetime.datetime.now())
     vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
     vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))
