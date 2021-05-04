@@ -378,13 +378,11 @@ def manage_make_tree(r_matrix_list, config_list):
                     del row[""]
                     matrix_dict[key] = row
                 dm = DistanceMatrix(matrix, headers)
-
                 tree = nj(dm)
                 # print(tree.ascii_art())
                 # rooted = tree.root_at_midpoint()
                 # print(rooted)
                 # print(rooted.ascii_art())
-
                 """
                 print(headers)
                 print(matrix)
@@ -394,15 +392,11 @@ def manage_make_tree(r_matrix_list, config_list):
                     desired_array = [int(numeric_string) for numeric_string in line]
                     print(desired_array[0:n+1])
                     matrix_triangular.append(desired_array[0:n+1])
-
                 matrice_biopython = DistanceMatrix(names=headers, matrix=matrix_triangular)
                 constructor = DistanceTreeConstructor()
                 upgmatree = constructor.upgma(matrice_biopython)
-
                 upgmatree_rooted_at_midpoint = upgmatree.root_at_midpoint()
-
                 newick_str = upgmatree_rooted_at_midpoint
-                
                 """
                 newick_str = tree.root_at_midpoint()
                 with open(file_newick_path, 'w') as out:
@@ -636,11 +630,14 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
         print("*********************************************")
     name_dir = "core_genome"
     snippy_core_genome_folder = ""
+    number_strain = 0
     for geno_ref, snippy_dir_list in snippy_dir_dict.items():
+        number_strain = len(snippy_dir_list)
         snippy_core_genome_folder = os.path.join(os.path.dirname(snippy_dir_list[0]["out_dir"]), name_dir)
         break
     if not os.path.exists(snippy_core_genome_folder):
         os.makedirs(snippy_core_genome_folder)
+    print("Number Strain = {0}".format(number_strain))
     # filter by low coverage
     print("\nStart load filter by low coverage")
     bed_file = read_low_coverage(snippy_dir_dict, snippy_core_genome_folder)
@@ -672,15 +669,18 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     r_matrix_list = manage_r_matrix(filter_keep_vcf_list, type_matrice)
     print("End distance matrix")
     print("*********************************************")
-    # Make tree
-    print("\nStart make tree")
-    manage_make_tree(r_matrix_list, config_list)
-    print("End make tree")
-    print("*********************************************")
-    # networkX
-    print("\nStart networkX")
-    manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
-    print("End networkX")
+    if number_strain >= 3:
+        # Make tree
+        print("\nStart make tree")
+        manage_make_tree(r_matrix_list, config_list)
+        print("End make tree")
+        print("*********************************************")
+        # networkX
+        print("\nStart networkX")
+        manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
+        print("End networkX")
+    else:
+        print('The number of strain to make a tree is too low')
 
 
 def run():
