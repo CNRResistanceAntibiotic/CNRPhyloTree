@@ -286,7 +286,29 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
                     low_cov_file_list.append(low_coverage_file)
     if low_cov_file_list:
         print("LOW COVERAGE PROCESS")
-        cmd = "cat {0} > {1} | bedtools sort -i {1} | bedtools merge -i stdin > {2}".format(" ".join(low_cov_file_list), merge_bed_file, merge_bed_sort_file)
+        # cat
+        print("Length files list", len(low_cov_file_list))
+        x = 0
+        tmp_cat_list = []
+        for i in range(0, len(low_cov_file_list), 50):
+            tmp_cat_file = os.path.join(snippy_core_genome_folder, f"merged_bed_file_{x}.bed")
+            cmd = f"cat {' '.join(low_cov_file_list[i:i + 50])} > {tmp_cat_file} "
+            log_message = cmd
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+            print(log_message)
+            tmp_cat_list.append(tmp_cat_file)
+            x += 1
+
+        cmd = "cat {0} > {1} ".format(" ".join(tmp_cat_list), merge_bed_file)
+        log_message = cmd
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+        print(log_message)
+        # bedtools
+        cmd = f"bedtools sort -i {merge_bed_file} | bedtools merge -i stdin > {merge_bed_sort_file}"
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
