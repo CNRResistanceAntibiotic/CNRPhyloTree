@@ -67,6 +67,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
         cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} {snippy_folder}'
     else:
         cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} --mask {bed_file} {snippy_folder}'
+    print(cmd)
     os.system(cmd)
 
 
@@ -212,8 +213,10 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
     snippy_exe = "snippy-core"
     name_dir = "core_genome"
     vcf_path = ""
-    vcf_list = []
     print("\n")
+    print("snippy_dir_dict : ", snippy_dir_dict)
+    print("core_genome_path : ", core_genome_path)
+    print("Bed file : ", bed_file)
     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
         snippy_dirs = ""
         for element in snippy_dir_list:
