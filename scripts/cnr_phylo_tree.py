@@ -252,6 +252,7 @@ def manage_filter_snp(vcf_path, min_dist, type_matrice):
     """
     out_prefix = "filter"
     filter_keep_vcf_list = []
+    bool = False
     if not os.path.exists(os.path.join(os.path.dirname(vcf_path), out_prefix + "_" + str(os.path.basename(vcf_path).split(".vcf")[0]) + "_density_filtered_keep.vcf")):
         bool = filter_SNP_density.main(min_dist, vcf_path, out_prefix, type_matrice)
     else:
