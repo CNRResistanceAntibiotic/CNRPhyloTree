@@ -230,17 +230,23 @@ def main(min_dist, vcf_file, out_prefix, type_matrix):
     vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
     vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))
     print("\n " + str(count) + " vcf entries are read.")
-    print(f"\n             {len(vcf_list)} filtered vcf entries are saved. {round((len(vcf_list) * 100) / count)}%")
-    print(
-        f"\n             {len(vcf_unkeep_list)} filtered vcf entries are saved in unkeep file. {round((len(vcf_unkeep_list) * 100) / count)}%")
-    if len(vcf_list) + len(vcf_unkeep_list) == count:
-        print("\n SUCCESS to class all SNPs")
+
+    if count == 0:
+        print("Any SNP are keep for further tasks")
+        return False
     else:
-        print("\n FAIL to class all SNPs")
-    write_vcf(vcf_list, sample_names, out_vcf_file)
-    write_vcf(vcf_unkeep_list, sample_names, out_vcf_unkeep_file)
+        print(f"\n             {len(vcf_list)} filtered vcf entries are saved. {round((len(vcf_list) * 100) / count)}%")
+        print(
+            f"\n             {len(vcf_unkeep_list)} filtered vcf entries are saved in unkeep file. {round((len(vcf_unkeep_list) * 100) / count)}%")
+        if len(vcf_list) + len(vcf_unkeep_list) == count:
+            print("\n SUCCESS to class all SNPs")
+        else:
+            print("\n FAIL to class all SNPs")
+        write_vcf(vcf_list, sample_names, out_vcf_file)
+        write_vcf(vcf_unkeep_list, sample_names, out_vcf_unkeep_file)
     print("\nDATE: ", datetime.datetime.now())
     print('\nvcf filtration done!\n')
+    return True
 
 
 def version():

@@ -253,12 +253,13 @@ def manage_filter_snp(vcf_path, min_dist, type_matrice):
     out_prefix = "filter"
     filter_keep_vcf_list = []
     if not os.path.exists(os.path.join(os.path.dirname(vcf_path), out_prefix + "_" + str(os.path.basename(vcf_path).split(".vcf")[0]) + "_density_filtered_keep.vcf")):
-        filter_SNP_density.main(min_dist, vcf_path, out_prefix, type_matrice)
+        bool = filter_SNP_density.main(min_dist, vcf_path, out_prefix, type_matrice)
     else:
         print(f"the filtration is already done for {vcf_path}")
-    for file in os.listdir(os.path.dirname(vcf_path)):
-        if "_filtered_keep.vcf" in file:
-            filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_path), file))
+    if bool:
+        for file in os.listdir(os.path.dirname(vcf_path)):
+            if "_filtered_keep.vcf" in file:
+                filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_path), file))
     return filter_keep_vcf_list
 
 
@@ -342,7 +343,7 @@ def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
             vcf_strain_folder_list.append(strain_dict["out_dir"])
     print("vcf_strain_folder_list: ", vcf_strain_folder_list)
     for vcf_core_file in filter_keep_vcf_list:
-        print("vcf_core_file: ",vcf_core_file)
+        print("vcf_core_file: ", vcf_core_file)
         output_file = os.path.join(os.path.dirname(vcf_core_file), f"annotated_{os.path.basename(vcf_core_file)}")
         if not os.path.exists(os.path.join(output_file)):
             annotate_vcf_snippy_core.main(vcf_core_file, vcf_strain_folder_list, output_file)
@@ -684,28 +685,32 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
     print("End filtering SNP")
     print("*********************************************")
-    # annotated filter SNP
-    print("\nStart annotate filtering SNP")
-    manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
-    print("End annotate filtering SNP")
-    print("*********************************************")
-    # R_matrix
-    print("\nStart distance matrix")
-    r_matrix_list = manage_r_matrix(filter_keep_vcf_list, type_matrice)
-    print("End distance matrix")
-    print("*********************************************")
-    if number_strain >= 3:
-        # Make tree
-        print("\nStart make tree")
-        manage_make_tree(r_matrix_list, config_list)
-        print("End make tree")
+
+    if filter_keep_vcf_list:
+        # annotated filter SNP
+        print("\nStart annotate filtering SNP")
+        manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
+        print("End annotate filtering SNP")
         print("*********************************************")
-        # networkX
-        print("\nStart networkX")
-        manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
-        print("End networkX")
+        # R_matrix
+        print("\nStart distance matrix")
+        r_matrix_list = manage_r_matrix(filter_keep_vcf_list, type_matrice)
+        print("End distance matrix")
+        print("*********************************************")
+        if number_strain >= 3:
+            # Make tree
+            print("\nStart make tree")
+            manage_make_tree(r_matrix_list, config_list)
+            print("End make tree")
+            print("*********************************************")
+            # networkX
+            print("\nStart networkX")
+            manage_snp_network(r_matrix_list, config_file, filter_keep_vcf_list)
+            print("End networkX")
+        else:
+            print('The number of strain to make a tree is too low')
     else:
-        print('The number of strain to make a tree is too low')
+        print("No SNP are in the -keep- list. The program is stopped.")
 
 
 def run():
