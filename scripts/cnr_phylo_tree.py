@@ -5,8 +5,10 @@
 """
 
 import argparse
+import datetime
 import multiprocessing
 import os
+import shutil
 import subprocess
 import sys
 from csv import DictReader
@@ -17,6 +19,7 @@ from Bio import Phylo
 from skbio import DistanceMatrix
 from skbio.tree import nj
 
+import cnr_phylo_tree_src
 from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density
 import xml.etree.ElementTree as ET
 
@@ -306,7 +309,7 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
             tmp_cat_list.append(tmp_cat_file)
             x += 1
 
-        cmd = "cat {0} > {1} ".format(" ".join(tmp_cat_list), merge_bed_file)
+        cmd = f"cat {' '.join(tmp_cat_list)} > {merge_bed_file} "
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
@@ -386,7 +389,9 @@ def manage_make_tree(r_matrix_list, config_list):
     """
     for r_matrix in r_matrix_list:
         filename_newick = "newick_tree.nwk"
+        filename_png = "tree.png"
         file_newick_path = os.path.join(os.path.dirname(r_matrix), filename_newick)
+        file_png_path = os.path.join(os.path.dirname(r_matrix), filename_png)
         if not os.path.exists(file_newick_path):
             with open(r_matrix, "r") as conf:
                 reader = DictReader(conf, delimiter="\t")
@@ -437,6 +442,19 @@ def manage_make_tree(r_matrix_list, config_list):
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
+
+                # R Script
+                print(f'Execute RScript {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
+                ex_r = shutil.which("Rscript")
+                r_script = cnr_phylo_tree_src.__file__
+                print(r_script)
+
+                cmd = f"{ex_r} {r_script} -i {file_newick_path} -o {file_png_path}"
+                log_message = f"Command used : \n {cmd}\n"
+                # launch
+                process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                print(log_message)
+
         else:
             print(f"the newick generation step is already done for {r_matrix}")
 
