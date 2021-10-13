@@ -446,7 +446,7 @@ def manage_make_tree(r_matrix_list, config_list):
                 # R Script
                 print(f'Execute RScript {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
                 ex_r = shutil.which("Rscript")
-                r_script = os.path.join(os.path.dirname(cnr_phylo_tree_src.__file__), "save_newick_to_png.R")
+                r_script = "save_newick_to_png.R"
                 print(r_script)
 
                 cmd = f"{ex_r} {r_script} -i {file_newick_path} -o {file_png_path}"
