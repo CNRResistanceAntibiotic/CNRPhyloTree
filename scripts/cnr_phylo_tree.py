@@ -20,7 +20,8 @@ from skbio import DistanceMatrix
 from skbio.tree import nj
 
 import cnr_phylo_tree_src
-from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density
+from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density, \
+    execute_R
 import xml.etree.ElementTree as ET
 
 
@@ -443,17 +444,9 @@ def manage_make_tree(r_matrix_list, config_list):
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
 
-                # R Script
-                print(f'Execute RScript {datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")}')
-                ex_r = shutil.which("Rscript")
-                r_script = "save_newick_to_png.R"
-                print(r_script)
+                print()
 
-                cmd = f"{ex_r} {r_script} -i {file_newick_path} -o {file_png_path}"
-                log_message = f"Command used : \n {cmd}\n"
-                # launch
-                process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-                print(log_message)
+                execute_R.main(file_newick_path, file_png_path)
 
         else:
             print(f"the newick generation step is already done for {r_matrix}")
