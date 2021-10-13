@@ -12,8 +12,9 @@ setup(
     version='1.0.1',
     description='cnrphylotree: pipeline CNR Resistance for phylo tree',
     packages=find_packages(),
+    include_package_data=True,
     package_data={
-        'cnr_phylo_tree_src': ['save_newick_to_png.R'],
+        '': ['*.R'],
     },
     author='Richard Bonnet',
     author_email='rbonnet@chu-clermontferrand.fr',
