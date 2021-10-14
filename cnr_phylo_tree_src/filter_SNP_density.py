@@ -229,7 +229,7 @@ def main(min_dist, vcf_file, out_prefix, type_matrix):
     print("\nDATE: ", datetime.datetime.now())
     vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
     vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))
-    print("\n " + str(count) + " vcf entries are read.")
+    print(f"\n {count} vcf entries are read.")
 
     if str(count) == "0":
         print("Any SNP are keep for further tasks")
