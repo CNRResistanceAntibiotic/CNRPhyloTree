@@ -1,15 +1,5 @@
 #!/usr/bin/env Rscript
 
-#packages <- c("optparse",
-#              "ape",
-#              "Cairo",
-#              "showtext",
-#              "phangorn",
-#              "phytools")
-#if (length(setdiff(packages, rownames(installed.packages()))) > 0) {
-#  install.packages(setdiff(packages, rownames(installed.packages())))
-#}
-
 suppressPackageStartupMessages(library("optparse"))
 library("ape")
 library("Cairo")
