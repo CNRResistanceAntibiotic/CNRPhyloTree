@@ -24,5 +24,4 @@ setup(
         'Programming Language :: Python :: 3 :: Only',
         'License :: OSI Approved :: GNU General Public License v3 (GPLv3)',
     ],
-
 )
