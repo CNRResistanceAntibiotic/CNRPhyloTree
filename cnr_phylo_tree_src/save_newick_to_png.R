@@ -16,7 +16,7 @@ option_list <- list(
   make_option(c("-i", "--input"), action="store",
               help="Input Newick tree"),
   make_option(c("-o", "--output"), action="store",
-               help="Output file name [default tree-<input-filename>.png]"),
+               help="Output file name [default tree-<input-filename>.png]")
 )
 
 opt_parser <- OptionParser(option_list=option_list, description=description)
