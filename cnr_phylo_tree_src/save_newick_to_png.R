@@ -35,7 +35,7 @@ if(is.null(opt$i)){
   stop("\ninput Newick tree is required\n")
 }
 
-font.add("Arial", "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf")
+#font.add("Arial", "/usr/share/fonts/truetype/msttcorefonts/Arial.ttf")
 
 if(!is.null(opt$i)){
   tree <- ape::read.tree(opt$i)
