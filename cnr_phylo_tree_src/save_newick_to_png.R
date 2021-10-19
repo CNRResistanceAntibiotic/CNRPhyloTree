@@ -30,7 +30,7 @@ if(is.null(opt$i)){
 myTree <- ape::read.tree(opt$i)
 
 if(is.null(opt$o)){
-  png(paste0("tree-",basename(opt$i),".png")
+  png(paste0("tree-",basename(opt$i),".png"))
 } else {
     png(opt$o)
 }
