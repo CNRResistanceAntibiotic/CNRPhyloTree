@@ -14,5 +14,6 @@ def main(file_newick_path, file_png_path):
     cmd = f"{ex_r} {r_script} -i {file_newick_path} -o {file_png_path}"
     log_message = f"Command used : \n {cmd}\n"
     # launch
-    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.read()
+    log_message += process
     print(log_message)
