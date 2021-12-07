@@ -15,5 +15,5 @@ def main(file_newick_path, file_png_path):
     log_message = f"Command used : \n {cmd}\n"
     # launch
     process = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT).stdout.read()
-    log_message += process
+    log_message = log_message + str(process)
     print(log_message)
