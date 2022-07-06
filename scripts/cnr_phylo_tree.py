@@ -698,13 +698,12 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     # pre-filter SNP
     if filter_homogeneous_SNP:
         print("\nStart pre-filtering SNP")
-        #vcf_path = manage_pre_filter_snp(vcf_path)
+        vcf_path = manage_pre_filter_snp(vcf_path)
         print("End pre-filtering SNP")
         print("*********************************************")
     # filter SNP
     print("\nStart filtering SNP")
-    # filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
-    filter_keep_vcf_list = ["/home/bacteriologie/Bureau/310H4_2022-06-22_2054652/310H4/310H4_2022-06-22_2054652/filter_core_genome_density_filtered_keep.vcf"]
+    filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
     print("End filtering SNP")
     print("*********************************************")
 
