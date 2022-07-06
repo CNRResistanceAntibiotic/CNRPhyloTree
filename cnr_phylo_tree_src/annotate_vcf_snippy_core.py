@@ -9,7 +9,7 @@ import vcf
 
 
 def read_vcf(vcf_file):
-    print("\nRead vcf file {}".format(vcf_file))
+    print(f"\nRead vcf file {vcf_file}")
     vcf_dic = OrderedDict()
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
     sample_names = vcf_reader.samples
@@ -20,8 +20,8 @@ def read_vcf(vcf_file):
             vcf_dic[record.CHROM] = [record]
         else:
             vcf_dic[record.CHROM].append(record)
-    print("Number of loci   : {}".format(len(vcf_dic)))
-    print("Number of samples: {}".format(len(sample_names)))
+    print(f"Number of loci   : {len(vcf_dic)}")
+    print(f"Number of samples: {len(sample_names)}")
     return vcf_dic, sample_names, counter
 
 

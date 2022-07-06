@@ -20,6 +20,7 @@ from skbio import DistanceMatrix
 from skbio.tree import nj
 
 import cnr_phylo_tree_src
+
 from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density, \
     execute_R
 import xml.etree.ElementTree as ET
@@ -289,10 +290,18 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
     merge_bed_sort_file = os.path.join(snippy_core_genome_folder, "merged_bed_sort_file.bed")
     for genome_ref, strain_snippy_list in snippy_dir_dict.items():
         for element in strain_snippy_list:
+            low_coverage_file = ""
+            low_coverage_file_merge = ""
             for file in os.listdir(element["out_dir"]):
                 if "low_coverage_region_" in file:
                     low_coverage_file = os.path.join(element["out_dir"], file)
-                    low_cov_file_list.append(low_coverage_file)
+                elif "merge_bad_position_sort" in file:
+                    low_coverage_file_merge = os.path.join(element["out_dir"], file)
+            if low_coverage_file_merge:
+                low_cov_file_list.append(low_coverage_file_merge)
+            elif low_coverage_file:
+                low_cov_file_list.append(low_coverage_file)
+
     if low_cov_file_list:
         print("LOW COVERAGE PROCESS")
         # cat
@@ -689,12 +698,13 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     # pre-filter SNP
     if filter_homogeneous_SNP:
         print("\nStart pre-filtering SNP")
-        vcf_path = manage_pre_filter_snp(vcf_path)
+        #vcf_path = manage_pre_filter_snp(vcf_path)
         print("End pre-filtering SNP")
         print("*********************************************")
     # filter SNP
     print("\nStart filtering SNP")
-    filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
+    # filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
+    filter_keep_vcf_list = ["/home/bacteriologie/Bureau/310H4_2022-06-22_2054652/310H4/310H4_2022-06-22_2054652/filter_core_genome_density_filtered_keep.vcf"]
     print("End filtering SNP")
     print("*********************************************")
 
