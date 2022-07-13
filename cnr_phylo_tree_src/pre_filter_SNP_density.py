@@ -134,6 +134,10 @@ def main(vcf_file, out_vcf_file, out_vcf_unkeep_file):
     print("\nDATE: ", datetime.datetime.now())
     print('\nVCF pre-filtration done!\n')
 
+    if len(vcf_list) == 0:
+        print("\n No SNP FOUND !!!!!! Exit program")
+        exit(1)
+
 
 def version():
     return '1.0'
