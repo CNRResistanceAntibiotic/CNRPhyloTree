@@ -83,6 +83,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     """
     snippy_dir_dict = {}
     print("config_list: ", config_list)
+    ref_genome = ""
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir_root = os.path.join(result_dir, genome_name)
@@ -113,7 +114,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-    return snippy_dir_dict
+    return snippy_dir_dict, ref_genome
 
 
 def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
@@ -725,7 +726,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
         print("*********************************************")
     else:
         print("Skip Snippy Detection")
-        snippy_dir_dict = get_snippy_dir(geno_ref_dir, result_dir, config_list)
+        snippy_dir_dict, ref_genome = get_snippy_dir(geno_ref_dir, result_dir, config_list)
         print("*********************************************")
     name_dir = "core_genome"
     snippy_core_genome_folder = ""
