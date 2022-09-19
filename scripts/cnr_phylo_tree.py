@@ -389,7 +389,8 @@ def compute_constant_site(bed_file, ref_genome):
                 else:
                     constant_O += 1
 
-        with open(out, "w") as out_file:
+        out_constant_tsv = os.path.join(os.path.dirname(bed_file), 'constant_site.tsv')
+        with open(out_constant_tsv, "w") as out_file:
             writer = csv.writer(out_file, delimiter='\t')
             writer.writerow(["genomes", "A", "T", "G", "C", "sum"])
             writer.writerow([os.path.basename(ref_genome), ref_A, ref_T, ref_G, ref_C, ref_A+ref_T+ref_G+ref_C])
