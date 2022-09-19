@@ -715,7 +715,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     print("#################\n")
     print(f"Filter Homogeneous SNP : {filter_homogeneous_SNP} \n")
     print("#################\n")
-
+    ref_genome = ""
     config_list = load_config(config_file)
     if not jump_snippy_detection:
         # snippy
