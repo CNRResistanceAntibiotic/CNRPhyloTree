@@ -5,21 +5,18 @@
 """
 
 import argparse
-import datetime
+import csv
 import multiprocessing
 import os
-import shutil
 import subprocess
 import sys
 from csv import DictReader
 from xml.dom import minidom
 
-from Bio import Phylo
+from Bio import Phylo, SeqIO
 # from Bio.Phylo.TreeConstruction import DistanceTreeConstructor, DistanceMatrix
 from skbio import DistanceMatrix
 from skbio.tree import nj
-
-import cnr_phylo_tree_src
 
 from cnr_phylo_tree_src import filter_SNP_density, vcf2dist, mtx2mst, annotate_vcf_snippy_core, pre_filter_SNP_density, \
     execute_R
@@ -206,7 +203,7 @@ def manage_snippy(read_dir, geno_ref_dir, result_dir, config_list):
     # wait rest of jobs
     for job in jobs:
         job.join()
-    return snippy_dir_dict
+    return snippy_dir_dict, ref_genome
 
 
 def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
@@ -342,6 +339,61 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
         return merge_bed_sort_file
     else:
         return "no file"
+
+
+def compute_constant_site(bed_file, ref_genome):
+    ref_A = ref_T = ref_G= ref_C= ref_O = constant_A = constant_T =constant_G =constant_C =constant_O = 0
+    if bed_file != "no file":
+        out_constant_fasta = os.path.join(os.path.dirname(bed_file), "constant_sites.fasta")
+        if ".gbff" in os.path.basename(ref_genome) or ".gbk" in os.path.basename(ref_genome):
+            new_ref_genome = os.path.join(os.path.dirname(ref_genome), os.path.basename(ref_genome).split(".")[0]+".fasta")
+            cmd = f"any2fasta {ref_genome} > {new_ref_genome}"
+            log_message = cmd
+            p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+            out, err = p.communicate()
+            log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+            print(log_message)
+            ref_genome = new_ref_genome
+
+        for rec in SeqIO.parse(ref_genome, "fasta"):
+            for base in rec.seq:
+                if base.upper() == "A":
+                    ref_A += 1
+                elif base.upper() == "T":
+                    ref_T += 1
+                elif base.upper() == "G":
+                    ref_G += 1
+                elif base.upper() == "C":
+                    ref_C += 1
+                else:
+                    ref_O += 1
+
+        cmd = f"bedtools getfasta -fi {ref_genome} -bed {bed_file} > {out_constant_fasta}"
+        log_message = cmd
+        p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        out, err = p.communicate()
+        log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+        print(log_message)
+
+        for rec in SeqIO.parse(out_constant_fasta, "fasta"):
+            for base in rec.seq:
+                if base.upper() == "A":
+                    constant_A += 1
+                elif base.upper() == "T":
+                    constant_T += 1
+                elif base.upper() == "G":
+                    constant_G += 1
+                elif base.upper() == "C":
+                    constant_C += 1
+                else:
+                    constant_O += 1
+
+        with open(out, "w") as out_file:
+            writer = csv.writer(out_file, delimiter='\t')
+            writer.writerow(["genomes", "A", "T", "G", "C", "sum"])
+            writer.writerow([os.path.basename(ref_genome), ref_A, ref_T, ref_G, ref_C, ref_A+ref_T+ref_G+ref_C])
+            writer.writerow([os.path.basename(out_constant_fasta), constant_A, constant_T, constant_G, constant_C,
+                             constant_A+constant_T+constant_G+constant_C])
 
 
 def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
@@ -668,7 +720,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     if not jump_snippy_detection:
         # snippy
         print("\nStart Snippy")
-        snippy_dir_dict = manage_snippy(read_dir, geno_ref_dir, result_dir, config_list)
+        snippy_dir_dict, ref_genome = manage_snippy(read_dir, geno_ref_dir, result_dir, config_list)
         print("End Snippy")
         print("*********************************************")
     else:
@@ -684,11 +736,16 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
         break
     if not os.path.exists(snippy_core_genome_folder):
         os.makedirs(snippy_core_genome_folder)
-    print("Number Strain = {0}".format(number_strain))
+    print(f"Number Strain = {number_strain}")
     # filter by low coverage
     print("\nStart load filter by low coverage")
     bed_file = read_low_coverage(snippy_dir_dict, snippy_core_genome_folder)
     print("\nEnd load filter by low coverage")
+    print("*********************************************")
+    # calculate constant site
+    print("\nStart compute constant site")
+    compute_constant_site(bed_file, ref_genome)
+    print("\nEnd compute constant site")
     print("*********************************************")
     # snippy_core
     print("\nStart Snippy-core")
