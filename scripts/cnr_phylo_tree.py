@@ -395,7 +395,7 @@ def compute_constant_site(bed_file, ref_genome):
             writer.writerow(["genomes", "A", "T", "G", "C", "sum"])
             sum_ref = ref_A+ref_T+ref_G+ref_C
             sum_constant = sum_ref - (constant_A+constant_T+constant_G+constant_C)
-            writer.writerow([os.path.basename(ref_genome).split(".")[0], ref_A, ref_T, ref_G, ref_C, sum_ref)
+            writer.writerow([os.path.basename(ref_genome).split(".")[0], ref_A, ref_T, ref_G, ref_C, sum_ref])
             writer.writerow([os.path.basename(out_constant_fasta).split(".")[0], constant_A, constant_T, constant_G, constant_C,
                              sum_constant])
 
