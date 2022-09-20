@@ -393,9 +393,11 @@ def compute_constant_site(bed_file, ref_genome):
         with open(out_constant_tsv, "w") as out_file:
             writer = csv.writer(out_file, delimiter='\t')
             writer.writerow(["genomes", "A", "T", "G", "C", "sum"])
-            writer.writerow([os.path.basename(ref_genome), ref_A, ref_T, ref_G, ref_C, ref_A+ref_T+ref_G+ref_C])
-            writer.writerow([os.path.basename(out_constant_fasta), constant_A, constant_T, constant_G, constant_C,
-                             constant_A+constant_T+constant_G+constant_C])
+            sum_ref = ref_A+ref_T+ref_G+ref_C
+            sum_constant = sum_ref - (constant_A+constant_T+constant_G+constant_C)
+            writer.writerow([os.path.basename(ref_genome).split(".")[0], ref_A, ref_T, ref_G, ref_C, sum_ref)
+            writer.writerow([os.path.basename(out_constant_fasta).split(".")[0], constant_A, constant_T, constant_G, constant_C,
+                             sum_constant])
 
 
 def manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict):
