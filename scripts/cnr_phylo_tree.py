@@ -84,14 +84,17 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     snippy_dir_dict = {}
     ref_genome = ""
     for row in config_list:
+        print("\n", row)
         genome_name = row["genomes"].split(".")[0]
         out_dir_root = os.path.join(result_dir, genome_name)
         list_file = os.listdir(out_dir_root)
         out_dir = ""
         for file in list_file:
+            print(file)
             file_path = os.path.join(out_dir_root, file)
             if "_" in str(file):
-                file_split = str(file).split("_")
+                file_split = str(file).split("_")[:-1]
+                print(file_split)
                 for file_part in file_split:
                     if row["strains"] == file_part and os.path.isdir(file_path):
                         out_dir = file_path
