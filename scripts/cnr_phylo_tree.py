@@ -82,12 +82,10 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     :return: hash table of snippy directory
     """
     snippy_dir_dict = {}
-    print("config_list: ", config_list)
     ref_genome = ""
     for row in config_list:
         genome_name = row["genomes"].split(".")[0]
         out_dir_root = os.path.join(result_dir, genome_name)
-        print("out_dir_root: ", out_dir_root)
         list_file = os.listdir(out_dir_root)
         out_dir = ""
         for file in list_file:
@@ -106,14 +104,20 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             print(f"Path : {out_dir}")
             print(f"ERROR: the directory snippy for the strain {row['strains']} dont exist ! Exit!")
             exit(1)
+        # case if reference genome in analysis
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
+        print(ref_genome)
         if ref_genome not in snippy_dir_dict:
             snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
+            """
             value_list = snippy_dir_dict[ref_genome]
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
+            """
+            print("lol")
+    print(snippy_dir_dict, ref_genome)
     return snippy_dir_dict, ref_genome
 
 
@@ -466,11 +470,17 @@ def manage_make_tree(r_matrix_list, config_list):
                 headers = list(filter(None, headers))
                 matrix = []
                 matrix_dict = {}
+                x = 0
+
                 for row in reader:
+                    x += 1
+                    y = 0
                     line = []
                     for col in headers:
+                        y += 1
                         value = row[col]
                         line.append(value)
+                    print(x, y)
                     matrix.append(line)
                     key = row[""]
                     del row[""]
@@ -730,6 +740,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
     else:
         print("Skip Snippy Detection")
         snippy_dir_dict, ref_genome = get_snippy_dir(geno_ref_dir, result_dir, config_list)
+        print("END Skip Snippy Detection")
         print("*********************************************")
     name_dir = "core_genome"
     snippy_core_genome_folder = ""

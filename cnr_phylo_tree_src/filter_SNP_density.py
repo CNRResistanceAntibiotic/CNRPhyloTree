@@ -225,7 +225,7 @@ def main(min_dist, vcf_file, out_prefix, type_matrix):
 
     print("\nDATE: ", datetime.datetime.now())
 
-    vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
+    vcf_list, vcf_unkeep_list, sample_names, vcf_list = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
     print("\nDATE: ", datetime.datetime.now())
     vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
     vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))
