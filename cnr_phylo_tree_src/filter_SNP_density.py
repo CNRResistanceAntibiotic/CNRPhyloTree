@@ -109,8 +109,8 @@ def update_vcf_hash(snp_hash, sample_names, threshold):
                     var_list_2 = snp_hash.get(pos_2)
                     for sample in sample_names:
                         # compare base of 2 snp for the same sample
-                        if var_list_1[9][sample] is not "0":
-                            if var_list_2[9][sample] is not "0":
+                        if var_list_1[9][sample] != "0":
+                            if var_list_2[9][sample] != "0":
                                 # add "N" to the ALT
                                 if "N" not in var_list_1[4]:
                                     var_list_1[4].append("X")
@@ -225,7 +225,7 @@ def main(min_dist, vcf_file, out_prefix, type_matrix):
 
     print("\nDATE: ", datetime.datetime.now())
 
-    vcf_list, vcf_unkeep_list, sample_names, vcf_list = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
+    vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
     print("\nDATE: ", datetime.datetime.now())
     vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
     vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))

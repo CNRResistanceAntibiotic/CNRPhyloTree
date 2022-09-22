@@ -110,12 +110,10 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
         if ref_genome not in snippy_dir_dict:
             snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
         else:
-            """
             value_list = snippy_dir_dict[ref_genome]
             value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-            """
             print("lol")
     print(snippy_dir_dict, ref_genome)
     return snippy_dir_dict, ref_genome
