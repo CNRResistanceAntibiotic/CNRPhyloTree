@@ -672,7 +672,7 @@ def pre_main(args):
     """
     read_dir = geno_ref_dir = result_dir = config_file = type_matrice = ""
     min_dist = 0
-    jump_snippy_detection = filter_homogeneous_SNP = False
+    jump_snippy_detection = filter_homogeneous_SNP = annotation_vcf = False
     if args.repRead:
         read_dir = os.path.abspath(args.repRead)
     if args.genomeRef:
@@ -705,17 +705,19 @@ def pre_main(args):
         os.makedirs(result_dir)
     if args.FilterHomogeneousSNP:
         filter_homogeneous_SNP = args.FilterHomogeneousSNP
+    if args.AnnotationVCF:
+        annotation_vcf = args.AnnotationVCF
     if args.minimum_distance:
         min_dist = args.minimum_distance
     if args.type_matrice:
         type_matrice = args.type_matrice
 
-    main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, jump_snippy_detection,
+    main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, annotation_vcf, jump_snippy_detection,
          filter_homogeneous_SNP)
 
 
-def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, jump_snippy_detection=False,
-         filter_homogeneous_SNP=False):
+def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice, annotation_vcf = False,
+         jump_snippy_detection=False, filter_homogeneous_SNP=False):
     """
     This make a configuration file with argument for launch of snakemake
     :param jump_snippy_detection:
@@ -782,10 +784,11 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
 
     if filter_keep_vcf_list:
         # annotated filter SNP
-        print("\nStart annotate filtering SNP")
-        manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
-        print("End annotate filtering SNP")
-        print("*********************************************")
+        if annotation_vcf:
+            print("\nStart annotate filtering SNP")
+            manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
+            print("End annotate filtering SNP")
+            print("*********************************************")
         # R_matrix
         print("\nStart distance matrix")
         r_matrix_list = manage_r_matrix(filter_keep_vcf_list, type_matrice)
@@ -835,6 +838,9 @@ def run():
                              " (default: absolu)")
     parser.add_argument('-p', '--SnippyAlreadyDone', dest="Already", action='store_true', default=False,
                         help="Indicate if all snippy detection are already done (default: False)")
+    parser.add_argument('-a', '--AnnotationVCF', dest="AnnotationVCF", action='store_true', default=False,
+                        help="Annotation finale VCF (default: False)")
+
     parser.add_argument('-f1', '--FilterHomogeneousSNP', dest="FilterHomogeneousSNP",
                         action='store_true', default=False,
                         help="Allow to filter homogeneous SNP before filtering (default: False)")
