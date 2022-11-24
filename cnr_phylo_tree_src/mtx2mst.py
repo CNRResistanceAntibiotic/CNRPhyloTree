@@ -20,11 +20,9 @@ from bokeh.models import ColumnDataSource, Legend
 
 
 def remove_duplicate(names, array):
-    dl_dic = {}
-    legends = {}
+    dl_dic, legends = {}, {}
     df = pd.DataFrame(data=array, index=names, columns=names)
     for n, name in enumerate(names):
-        n = n + 1
         cols = []
         for item in names:
             if item != name:
@@ -55,7 +53,7 @@ def remove_duplicate(names, array):
                           inplace=True)
                 legends[items_names] = ",".join(items)
 
-    print("\nRemove duplicates: {0}\n".format(indexes))
+    print(f"\nRemove duplicates: {indexes}\n")
     # print(dl_dic)
     arr = df.values
     names = list(df.index)
@@ -79,7 +77,7 @@ def load_matrix(mtx_file):
     # print(names, "\n\n", data)
     #    data as scipy sparce matrix
     #    data = csr_matrix(data)
-    #    store column names, row names and data in mtx_dict dictionnary
+    #    store column names, row names and data in mtx_dict dict
     mtx_dict = {'names': names, 'matrix': data}
     return mtx_dict, legends
 
@@ -95,7 +93,6 @@ def add_ST_label(config_file, legends, G, second_mlst):
                     # attribute ST number to strain which have ST number precise in csv configuration file, attribute also name
                     if name_node in G.nodes:
                         try:
-
                             G.nodes[name_node]['st-1'] = row_dict['MLST-1']
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = row_dict['MLST-2']
@@ -161,6 +158,7 @@ def make_legend(g, plot, legends, second_mlst, source_node, source):
     strain_label = plot.text(x='x', y='y', text_baseline='middle', text_align='center', text='index', muted_alpha=0,
                              source=source_node)
 
+    st_label_2 = ""
     if second_mlst:
         st_label_1 = plot.text(x='x', y='y', text_baseline='bottom', text_align='center', y_offset=-25, text='st-1',
                                muted_alpha=0, source=source_node, text_color='orangered')
@@ -203,14 +201,14 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     """
     e = []
     #    Create an empty graph
-    G = nx.Graph()
+    nx_gr = nx.Graph()
 
-    G.add_nodes_from(mtx_dic['names'])
+    nx_gr.add_nodes_from(mtx_dic['names'])
     matrix = mtx_dic['matrix'].tolist()
     second_mlst = False
 
     # add ST Label
-    G, second_mlst = add_ST_label(config_file, legends, G, second_mlst)
+    nx_gr, second_mlst = add_ST_label(config_file, legends, nx_gr, second_mlst)
 
     # create edges with the weight in attribute
     n = 0
@@ -234,10 +232,10 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                           {'weight': matrix[n][m], "color": 'grey', 'width': 1, 'alpha': 0.8}))
             m += 1
         n += 1
-        G.add_edges_from(e)
+        nx_gr.add_edges_from(e)
 
     # with weightless edge of the graph G create a tree with all node
-    g = nx.minimum_spanning_tree(G)
+    g = nx.minimum_spanning_tree(nx_gr)
 
     # take the position give by the Kamada-Kawai algorithm and assign them to corresponding strain
     # pos = nx.kamada_kawai_layout(g, scale=50)
@@ -312,33 +310,26 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
         bokeh_edge.append(e)
 
     source_node = ColumnDataSource(pd.DataFrame.from_dict({k: v for k, v in g.nodes(data=True)}, orient='index'))
-
     source_edge = ColumnDataSource(pd.DataFrame.from_dict(bokeh_edge))
-
-    x_edge = []
-    y_edge = []
-    snp = []
+    x_edge, y_edge, snp = [], [], []
     for edge in g.edges():
         x_edge.append((g.nodes[edge[0]]['pos'][0] + g.nodes[edge[1]]['pos'][0]) / 2)
         y_edge.append((g.nodes[edge[0]]['pos'][1] + g.nodes[edge[1]]['pos'][1]) / 2)
         snp.append(g.edges[edge]['weight'])
-    source = ColumnDataSource({'x': [i for i in x_edge],
-                               'y': [i for i in y_edge],
-                               'dist': [i for i in snp]})
+    source = ColumnDataSource({'x': [i for i in x_edge], 'y': [i for i in y_edge], 'dist': [i for i in snp]})
 
-    plot = figure(plot_width=1700, plot_height=900, x_range=(-1000.1, 1000.1), y_range=(-1000.1, 1000.1))
+    plot = figure(width=1700, height=900, x_range=(-1000.1, 1000.1), y_range=(-1000.1, 1000.1))
     try:
-        plot.title.text = "Strain network in function of SNP difference (Total SNP : {0}) " \
-                          "\n Schema MLST :".format(count_snp_keep) + dic_node_st['MLST_schema']
+        plot.title.text = f"Strain network in function of SNP difference (Total SNP : {count_snp_keep})" \
+                          f" \n Schema MLST : {dic_node_st['MLST_schema']}"
     except KeyError:
-        plot.title.text = "Strain network in function of SNP difference (Total SNP : {0}) ".format(count_snp_keep)
+        plot.title.text = f"Strain network in function of SNP difference (Total SNP : {count_snp_keep}) "
 
     plot.multi_line(xs='xector', ys='yector', line_color='bokeh_color', line_width='width', line_alpha='alpha',
                     source=source_edge)
 
     legend = make_legend(g, plot, legends, second_mlst, source_node, source)
     plot.add_layout(legend, 'right')
-
     output_file(graph_name)
     # -------
     save(plot)
@@ -375,7 +366,7 @@ def pre_main(args):
     mtx_file = os.path.abspath(args.mtxFile)
     graph_name = args.graphName
     st_file = os.path.abspath(args.st_file)
-    main(mtx_file, graph_name, st_file)
+    main(mtx_file, graph_name, st_file, "0")
 
 
 def main(mtx_file, graph_name, config_file, count_snp_keep):

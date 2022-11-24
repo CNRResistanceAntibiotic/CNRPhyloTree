@@ -35,10 +35,8 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
     print(f"\nRead vcf file {vcf_file}")
     vcf_reader = vcf.Reader(open(vcf_file, 'r'))
     sample_names = vcf_reader.samples
-
     old_var_chrom = ""
-    vcf_keep_list = []
-    vcf_unkeep_list = []
+    vcf_keep_list, vcf_unkeep_list = [], []
     count = 0
     snp_hash = {}
 
@@ -82,7 +80,6 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
     print("\nClass SNPs in Keep or UnKeep\n")
     # class snp to keep or unkeep
     for pos in snp_hash:
-
         keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
         if keep_list:
             vcf_keep_list.append(keep_list)
@@ -130,10 +127,10 @@ def class_vcf(var_list, type_matrix):
     """
     This function classify the snp in two list : keep and unkeep
     :param var_list: a snp in list format.
+    :param type_matrix: the type of matrix
     :return: two lists : keep and unkeep
     """
-    vcf_keep_list = []
-    vcf_unkeep_list = []
+    vcf_keep_list, vcf_unkeep_list = [], []
     # get list of snp value for all samples
     res_set = set(list(var_list[9].values()))
     # case with undetermined allele is found (this SNP cant be a good marker for all sample) on vcf entry -> unkeep
@@ -150,7 +147,6 @@ def class_vcf(var_list, type_matrix):
     # all others cases -> keep
     else:
         vcf_keep_list = var_list
-
     return vcf_keep_list, vcf_unkeep_list
 
 
@@ -162,17 +158,15 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
     :param out_vcf_file: the path of the output file
     :return: nothing
     """
-
     now = datetime.datetime.now()
-
     col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
-
     header = "##fileformat=VCFv4.1\n"
     header = header + f"##fileDate={now.year}{now.month}{now.day}\n"
     header = header + "##source=filter_SNP_densityV0.1\n"
     header = header + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
     header = header + "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele.\">\n"
-    header = "{0}{1}".format(header, "#{0}\t{1}\n".format('\t'.join(col_names), '\t'.join(sample_names)))
+    supp_col = "#{0}\t{1}\n".format('\t'.join(col_names), '\t'.join(sample_names))
+    header = f"{header}{supp_col}"
     with open(out_vcf_file, 'w') as vcf_output_file:
         vcf_output_file.write(header)
         for element in vcf_list:
@@ -185,15 +179,13 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
                     for sample in sample_names:
                         line_to_write = line_to_write + str(x.get(sample)) + "\t"
                 elif type(x) == list:
-                    line_to_write = line_to_write + str(x).replace("[", "").replace("]", "").replace("'", "").replace(
-                        " ",
-                        "") + "\t"
+                    x = str(x).replace("[", "").replace("]", "").replace("'", "").replace(" ", "")
+                    line_to_write = line_to_write + x + "\t"
                 elif type(x) == dict:
                     # get first key
                     key = next(iter(x))
-                    line_to_write = line_to_write + key + "=" + str(x.get(key)).replace("[", "").replace("]",
-                                                                                                         "").replace(
-                        "'", "") + "\t"
+                    x = str(x.get(key)).replace("[", "").replace("]", "").replace("'", "")
+                    line_to_write = line_to_write + key + "=" + x + "\t"
                 else:
                     line_to_write = line_to_write + str(x).replace("'", "").replace(" ", "") + "\t"
             line_to_write += "\n"
