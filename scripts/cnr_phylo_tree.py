@@ -260,6 +260,7 @@ def manage_filter_snp(vcf_path, min_dist, type_matrice):
     """
     out_prefix = "filter"
     filter_keep_vcf_list = []
+    filter_unkeep_vcf_list = []
     bool = False
     if not os.path.exists(os.path.join(os.path.dirname(vcf_path), out_prefix + "_" + str(os.path.basename(vcf_path).split(".vcf")[0]) + "_density_filtered_keep.vcf")):
         bool = filter_SNP_density.main(min_dist, vcf_path, out_prefix, type_matrice)
@@ -269,7 +270,9 @@ def manage_filter_snp(vcf_path, min_dist, type_matrice):
         for file in os.listdir(os.path.dirname(vcf_path)):
             if "_filtered_keep.vcf" in file:
                 filter_keep_vcf_list.append(os.path.join(os.path.dirname(vcf_path), file))
-    return filter_keep_vcf_list
+            if "_filtered_unkeep.vcf" in file:
+                filter_unkeep_vcf_list.append(os.path.join(os.path.dirname(vcf_path), file))
+    return filter_keep_vcf_list, filter_unkeep_vcf_list
 
 
 def manage_pre_filter_snp(vcf_path):
@@ -805,7 +808,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
         print("*********************************************")
     # filter SNP
     print("\nStart filtering SNP")
-    filter_keep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
+    filter_keep_vcf_list, filter_unkeep_vcf_list = manage_filter_snp(vcf_path, min_dist, type_matrice)
     print("End filtering SNP")
     print("*********************************************")
 
@@ -814,6 +817,7 @@ def main(read_dir, geno_ref_dir, result_dir, config_file, min_dist, type_matrice
         if annotation_vcf:
             print("\nStart annotate filtering SNP")
             manage_annotate_filter_snp(filter_keep_vcf_list, snippy_dir_dict)
+            manage_annotate_filter_snp(filter_unkeep_vcf_list, snippy_dir_dict)
             print("End annotate filtering SNP")
             print("*********************************************")
         # R_matrix
