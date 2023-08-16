@@ -70,7 +70,7 @@ def load_matrix(mtx_file):
     # matrix as numpy array
     arr = np.genfromtxt(mtx_file, delimiter='\t', dtype=str)
     names = arr[0, 1:].tolist()
-    data = np.asarray(arr[1:, 1:], dtype=np.int)
+    data = np.asarray(arr[1:, 1:], dtype=int)
     # print(names, "\n\n", data)
     names, data, legends = remove_duplicate(names, data)
     # print("\n")
