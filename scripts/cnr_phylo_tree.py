@@ -93,10 +93,11 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             print(file)
             file_path = os.path.join(out_dir_root, file)
             if "_" in str(file):
-                file_split = str(file).split("_")[:-1]
+                file_split = str(file).split("_")[2:-1]
                 print(file_split)
+                print(row["sequence_source"])
                 for file_part in file_split:
-                    if row["strains"] == file_part and os.path.isdir(file_path):
+                    if row["strains"] == file_part and os.path.isdir(file_path) and row["sequence_source"] in file:
                         out_dir = file_path
                         break
             else:
@@ -109,16 +110,13 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             exit(1)
         # case if reference genome in analysis
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
-        print(ref_genome)
         if ref_genome not in snippy_dir_dict:
-            snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"]}]
+            snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
         else:
             value_list = snippy_dir_dict[ref_genome]
-            value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"]}]
+            value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-            print("lol")
-    print(snippy_dir_dict, ref_genome)
     return snippy_dir_dict, ref_genome
 
 
@@ -245,7 +243,15 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
                 if "#CHROM" in line:
                     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
                         for element in snippy_dir_list:
-                            line = line.replace(os.path.basename(element["out_dir"]), element["strain"])
+                            print(element)
+                            name = element["strain"]
+                            if "hybride" in element["sequence_source"]:
+                                name += "_hyb"
+                            if "nanopore" in element["sequence_source"]:
+                                name += "_nano"
+                            if "pacbio" in element["sequence_source"]:
+                                name += "_pacbio"
+                            line = line.replace(os.path.basename(element["out_dir"]), name)
                     content[i] = line
         with open(vcf_path, "w") as vcf_write:
             for line in content:

@@ -8,27 +8,9 @@ import argparse
 import os
 from collections import OrderedDict
 
-import vcf
 import datetime
 
-
-def read_vcf(vcf_file, not_snp_dict):
-    print(f"\nRead vcf file {vcf_file}")
-    vcf_dic = OrderedDict()
-    vcf_reader = vcf.Reader(open(vcf_file, 'r'))
-    sample_names = vcf_reader.samples
-    for record in vcf_reader:
-        if record.CHROM not in vcf_dic.keys():
-            vcf_dic[record.CHROM] = [record]
-        else:
-            vcf_dic[record.CHROM].append(record)
-        if f"{record.CHROM}|{record.POS}" in not_snp_dict:
-            continue
-        elif "snp" not in record.INFO['TYPE']:
-            not_snp_dict[f"{record.CHROM}|{record.POS}"] = ""
-    print(f"Number of loci   : {len(vcf_dic)}")
-    print(f"Number of samples: {len(sample_names)}")
-    return vcf_dic, sample_names, not_snp_dict
+import vcf
 
 
 def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
@@ -159,7 +141,7 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
     :return: nothing
     """
     now = datetime.datetime.now()
-    col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
+    col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
     header = "##fileformat=VCFv4.1\n"
     header = header + f"##fileDate={now.year}{now.month}{now.day}\n"
     header = header + "##source=filter_SNP_densityV0.1\n"
