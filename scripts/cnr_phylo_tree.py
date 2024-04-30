@@ -96,10 +96,9 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                 file_split = str(file).split("_")[2:-1]
                 print(file_split)
                 print(row["sequence_source"])
-                for file_part in file_split:
-                    if row["strains"] == file_part and os.path.isdir(file_path) and row["sequence_source"] in file:
-                        out_dir = file_path
-                        break
+                if f"{row['strains']}_{row['sequence_source']}" in file:
+                    out_dir = file_path
+                    break
             else:
                 if row["strains"] == file and os.path.isdir(file_path):
                     out_dir = file_path
