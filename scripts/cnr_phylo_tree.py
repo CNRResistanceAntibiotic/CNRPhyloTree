@@ -525,6 +525,7 @@ def manage_make_tree(r_matrix_list, config_list):
                 print(f"the phyloxml generation step is done for {r_matrix}")
                 # make extended phyloxml file for phyd3
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
+                print(config_list, matrix_dict)
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
 
