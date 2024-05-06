@@ -141,7 +141,7 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
     :return: nothing
     """
     now = datetime.datetime.now()
-    col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO']
+    col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
     header = "##fileformat=VCFv4.1\n"
     header = header + f"##fileDate={now.year}{now.month}{now.day}\n"
     header = header + "##source=filter_SNP_densityV0.1\n"
