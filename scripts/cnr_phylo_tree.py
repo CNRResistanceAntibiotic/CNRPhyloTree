@@ -632,7 +632,18 @@ def get_phyloxml_extended(file_ext_phyloxml_path, file_phyloxml_path, config_lis
     resu_dict = get_dict_strain_et(root, leaf, {}, [])
     for leaf, strain in resu_dict.items():
         for config_dict in config_list:
-            if config_dict.get("strains") == strain:
+
+            strain_name = config_dict.get("strains")
+
+            if "hybride" in config_dict.get["sequence_source"]:
+                strain_name += "_hyb"
+            if "nanopore" in config_dict.get["sequence_source"]:
+                strain_name += "_nano"
+            if "pacbio" in config_dict.get["sequence_source"]:
+                strain_name += "_pacbio"
+
+
+            if strain_name == strain:
                 if pivot_mlst_1:
                     ET.SubElement(leaf, "{http://www.phyloxml.org}Blank").text = ""
                     ET.SubElement(leaf, "{http://www.phyloxml.org}ST-1").text = config_dict.get("MLST-1")
