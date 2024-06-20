@@ -99,6 +99,11 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                 if f"{row['strains']}_{row['sequence_source']}" in file:
                     out_dir = file_path
                     break
+                # old classification
+                elif f"{row['strains']}" in file:
+                    out_dir = file_path
+                    break
+
             else:
                 if row["strains"] == file and os.path.isdir(file_path):
                     out_dir = file_path
