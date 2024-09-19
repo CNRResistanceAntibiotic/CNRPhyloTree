@@ -79,7 +79,7 @@ def vcf2dist(vcf_dic, sample_names, type_matrice):
             value_to_subtract = less_snp_dist_dict[sample1][sample2]
             denominator = count_record-value_to_subtract
             value_init = snp_dist_dict[sample1][sample2]
-            snp_dist_dict[sample1][sample2] = (value_init/denominator)*100
+            snp_dist_dict[sample1][sample2] = (value_init/denominator) * 100
             snp_dist_dict[sample2][sample1] = (value_init / denominator) * 100
 
     return snp_dist_dict, contig_dist_dict
