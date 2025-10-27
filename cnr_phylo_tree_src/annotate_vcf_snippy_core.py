@@ -5,8 +5,6 @@ import csv
 import os
 from collections import OrderedDict
 
-import vcf
-
 
 def read_vcf(vcf_file):
     print(f"\nRead vcf file {vcf_file}")

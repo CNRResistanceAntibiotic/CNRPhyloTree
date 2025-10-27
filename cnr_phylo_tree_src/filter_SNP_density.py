@@ -1,36 +1,45 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-    This script will manage the vcf filtering
+VCF filtering script (compatible with vcfpy)
 """
 
 import argparse
 import os
-from collections import OrderedDict
-
 import datetime
-
-import vcf
+import vcfpy
 
 
 def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
     print(f"\nRead vcf file {vcf_file}")
-    vcf_reader = vcf.Reader(open(vcf_file, 'r'))
-    sample_names = vcf_reader.samples
+    vcf_reader = vcfpy.Reader.from_path(vcf_file)
+    sample_names = vcf_reader.header.samples.names
     old_var_chrom = ""
     vcf_keep_list, vcf_unkeep_list = [], []
     count = 0
     snp_hash = {}
 
-    # read line of the cvf object
     for var in vcf_reader:
         count += 1
-        var_list = [var.CHROM, var.POS, '.', var.REF, var.ALT, var.QUAL, '.', var.INFO, var.FORMAT]
+        var_list = [
+            var.CHROM,
+            var.POS,
+            ".",
+            var.REF,
+            [alt.value for alt in var.ALT],
+            var.QUAL,
+            ".",
+            var.INFO,
+            ":".join(var.FORMAT)
+        ]
+
+        # dictionnaire des génotypes par échantillon
         snp_name_hash = {}
         for sample in sample_names:
-            snp_name_hash[sample] = var.genotype(sample)['GT']
+            call = var.call_for_sample.get(sample)
+            snp_name_hash[sample] = call.data.get("GT") if call else None
         var_list.append(snp_name_hash)
-        # case of first snp of the first CHROM
+
         if not snp_hash:
             snp_hash[var.POS] = var_list
             old_var_chrom = var.CHROM
@@ -41,114 +50,77 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
                 continue
             else:
                 snp_hash = update_vcf_hash(snp_hash, sample_names, threshold)
-                # class snp to keep or unkeep
                 for pos in snp_hash:
                     keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
                     if keep_list:
                         vcf_keep_list.append(keep_list)
                     if unkeep_list:
                         vcf_unkeep_list.append(unkeep_list)
-                # reset hash for next chrom
                 snp_hash.clear()
-                # first snp of the actual new chrom
                 snp_hash[var.POS] = var_list
-                # new chrom ref
                 old_var_chrom = var.CHROM
 
-    #######################################################################
-    # last chrom
+    # dernier chromosome
     print("last chrom")
     snp_hash = update_vcf_hash(snp_hash, sample_names, threshold)
     print("\nClass SNPs in Keep or UnKeep\n")
-    # class snp to keep or unkeep
     for pos in snp_hash:
         keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
         if keep_list:
             vcf_keep_list.append(keep_list)
         if unkeep_list:
             vcf_unkeep_list.append(unkeep_list)
+
     return vcf_keep_list, vcf_unkeep_list, sample_names, count
 
 
 def update_vcf_hash(snp_hash, sample_names, threshold):
-    """
-    This function update the vcf hash
-    :param snp_hash: a vcf of snps hash
-    :param sample_names: the list of sample names
-    :param threshold: the threshold of min distance btw 2 snp
-    :return: a hash update of snp for 1 chrom
-    """
     for pos_1 in snp_hash:
         for pos_2 in snp_hash:
-            # dumb case
-            if pos_1 is not pos_2:
-                # make the threshold test
+            if pos_1 != pos_2:
                 if abs(pos_1 - pos_2) <= threshold:
                     var_list_1 = snp_hash.get(pos_1)
                     var_list_2 = snp_hash.get(pos_2)
                     for sample in sample_names:
-                        # compare base of 2 snp for the same sample
-                        if var_list_1[9][sample] != "0":
-                            if var_list_2[9][sample] != "0":
-                                # add "N" to the ALT
-                                if "N" not in var_list_1[4]:
-                                    var_list_1[4].append("X")
-                                # add "N" to the ALT
-                                if "N" not in var_list_2[4]:
-                                    var_list_2[4].append("X")
-                                # update number ALT
-                                var_list_1[9][sample] = len(var_list_1[4])
-                                var_list_2[9][sample] = len(var_list_2[4])
-                                # update hash
-                                snp_hash[pos_1] = var_list_1
-                                snp_hash[pos_2] = var_list_2
+                        if var_list_1[9][sample] != "0" and var_list_2[9][sample] != "0":
+                            if "X" not in var_list_1[4]:
+                                var_list_1[4].append("X")
+                            if "X" not in var_list_2[4]:
+                                var_list_2[4].append("X")
+                            var_list_1[9][sample] = len(var_list_1[4])
+                            var_list_2[9][sample] = len(var_list_2[4])
+                            snp_hash[pos_1] = var_list_1
+                            snp_hash[pos_2] = var_list_2
     return snp_hash
 
 
 def class_vcf(var_list, type_matrix):
-    """
-    This function classify the snp in two list : keep and unkeep
-    :param var_list: a snp in list format.
-    :param type_matrix: the type of matrix
-    :return: two lists : keep and unkeep
-    """
     vcf_keep_list, vcf_unkeep_list = [], []
-    # get list of snp value for all samples
     res_set = set(list(var_list[9].values()))
-    # case with undetermined allele is found (this SNP cant be a good marker for all sample) on vcf entry -> unkeep
+
     if "X" in var_list[4]:
         vcf_unkeep_list = var_list
     elif "N" in var_list[4]:
-        if "absolu" == type_matrix:
+        if type_matrix == "absolu":
             vcf_unkeep_list = var_list
-        elif "relatif" == type_matrix or "relatif-norm" == type_matrix:
+        elif type_matrix in ["relatif", "relatif-norm"]:
             vcf_keep_list = var_list
-    # case with only the same allele is found on vcf entry -> unkeep
     elif len(res_set) == 1:
         vcf_unkeep_list = var_list
-    # all others cases -> keep
     else:
         vcf_keep_list = var_list
     return vcf_keep_list, vcf_unkeep_list
 
 
 def write_vcf(vcf_list, sample_names, out_vcf_file):
-    """
-    This function write a vcf file by a list of snps in vcf format
-    :param vcf_list: a list of snps
-    :param sample_names: the name of sample
-    :param out_vcf_file: the path of the output file
-    :return: nothing
-    """
     now = datetime.datetime.now()
     col_names = ['CHROM', 'POS', 'ID', 'REF', 'ALT', 'QUAL', 'FILTER', 'INFO', 'FORMAT']
-    header = "##fileformat=VCFv4.1\n"
-    header = header + f"##fileDate={now.year}{now.month}{now.day}\n"
-    header = header + "##source=filter_SNP_densityV0.1\n"
-    header = header + "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
-    header = header + "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele.\">\n"
-    supp_col = "#{0}\t{1}\n".format('\t'.join(col_names), '\t'.join(sample_names))
-    header = f"{header}{supp_col}"
+    header = f"##fileformat=VCFv4.2\n##fileDate={now.year}{now.month}{now.day}\n"
+    header += "##source=filter_SNP_density_vcfpy\n"
+    header += "##FORMAT=<ID=GT,Number=1,Type=String,Description=\"Genotype\">\n"
+    header += "##INFO=<ID=TYPE,Number=A,Type=String,Description=\"The type of allele.\">\n"
+    header += "#{0}\t{1}\n".format('\t'.join(col_names), '\t'.join(sample_names))
+
     with open(out_vcf_file, 'w') as vcf_output_file:
         vcf_output_file.write(header)
         for element in vcf_list:
@@ -156,22 +128,21 @@ def write_vcf(vcf_list, sample_names, out_vcf_file):
             count = 0
             for x in element:
                 count += 1
-                # final dict
                 if count == 10:
                     for sample in sample_names:
-                        line_to_write = line_to_write + str(x.get(sample)) + "\t"
-                elif type(x) == list:
-                    x = str(x).replace("[", "").replace("]", "").replace("'", "").replace(" ", "")
-                    line_to_write = line_to_write + x + "\t"
-                elif type(x) == dict:
-                    # get first key
-                    key = next(iter(x))
-                    x = str(x.get(key)).replace("[", "").replace("]", "").replace("'", "")
-                    line_to_write = line_to_write + key + "=" + x + "\t"
+                        line_to_write += str(x.get(sample)) + "\t"
+                elif isinstance(x, list):
+                    x = ','.join(map(str, x))
+                    line_to_write += x + "\t"
+                elif isinstance(x, dict):
+                    if len(x) == 1:
+                        k = next(iter(x))
+                        line_to_write += f"{k}={x[k]}\t"
+                    else:
+                        line_to_write += str(x) + "\t"
                 else:
-                    line_to_write = line_to_write + str(x).replace("'", "").replace(" ", "") + "\t"
-            line_to_write += "\n"
-            vcf_output_file.write(line_to_write)
+                    line_to_write += str(x) + "\t"
+            vcf_output_file.write(line_to_write.strip() + "\n")
 
 
 def pre_main(args):
@@ -183,9 +154,7 @@ def pre_main(args):
 
 
 def main(min_dist, vcf_file, out_prefix, type_matrix):
-
     print(f"\nSNP density threshold: 2 SNPs for {min_dist} base(s)")
-    min_dist = int(min_dist)
     dir_name_path = os.path.dirname(vcf_file)
     name_file_vcf_input = os.path.basename(os.path.splitext(vcf_file)[0])
 
@@ -197,48 +166,43 @@ def main(min_dist, vcf_file, out_prefix, type_matrix):
         out_vcf_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_keep.vcf")
         out_vcf_unkeep_file = os.path.join(dir_name_path, name_file_vcf_input + "_density_filtered_unkeep.vcf")
 
-    print("\nDATE: ", datetime.datetime.now())
-
+    print("\nDATE:", datetime.datetime.now())
     vcf_list, vcf_unkeep_list, sample_names, count = read_with_min_dist_vcf(vcf_file, min_dist, type_matrix)
-    print("\nDATE: ", datetime.datetime.now())
-    vcf_list = sorted(vcf_list, key=lambda element: (element[0], element[1]))
-    vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda element: (element[0], element[1]))
-    print(f"\n {count} vcf entries are read.")
+    print("\nDATE:", datetime.datetime.now())
+    vcf_list = sorted(vcf_list, key=lambda e: (e[0], e[1]))
+    vcf_unkeep_list = sorted(vcf_unkeep_list, key=lambda e: (e[0], e[1]))
+    print(f"\n{count} VCF entries read.")
 
-    if str(count) == "0":
-        print("Any SNP are keep for further tasks")
+    if count == 0:
+        print("No SNP kept for further tasks")
         return False
     else:
-        print(f"\n             {len(vcf_list)} filtered vcf entries are saved. {round((len(vcf_list) * 100) / count)}%")
-        print(
-            f"\n             {len(vcf_unkeep_list)} filtered vcf entries are saved in unkeep file. {round((len(vcf_unkeep_list) * 100) / count)}%")
+        print(f"\n{len(vcf_list)} SNPs kept ({round(len(vcf_list)*100/count)}%)")
+        print(f"{len(vcf_unkeep_list)} SNPs unkept ({round(len(vcf_unkeep_list)*100/count)}%)")
         if len(vcf_list) + len(vcf_unkeep_list) == count:
-            print("\n SUCCESS to class all SNPs")
+            print("\nSUCCESS: all SNPs classified")
         else:
-            print("\n FAIL to class all SNPs")
+            print("\nWARNING: not all SNPs classified")
         write_vcf(vcf_list, sample_names, out_vcf_file)
         write_vcf(vcf_unkeep_list, sample_names, out_vcf_unkeep_file)
-    print("\nDATE: ", datetime.datetime.now())
-    print('\nvcf filtration done!\n')
+    print("\nDATE:", datetime.datetime.now())
+    print('\nVCF filtration done!\n')
     return True
 
 
 def version():
-    return '1.0'
+    return '2.0-vcfpy'
 
 
 def run():
-    parser = argparse.ArgumentParser(description='VCFFilterSNPDensity- Version ' + version())
+    parser = argparse.ArgumentParser(description='VCFFilterSNPDensity - Version ' + version())
     parser.add_argument('-v', '--vcf', dest="vcf", default='test.vcf', help='vcf file [snps.recode.vcf]')
     parser.add_argument('-min', '--mindist', dest="mindist", default='20',
                         help='Select minimum distance between SNPs [10]')
     parser.add_argument('-o', '--out', dest="outPrefix", default='', help='output prefix')
     parser.add_argument('-tm', '--type_matrice', dest="type_matrice", default="absolu",
-                        help="The mode of computation of the distance matrice. [absolu, relatif, relatif-norm]"
-                             " (default: absolu)")
-    parser.add_argument('-V', '--version', action='version', version='VCFFilterSNPDensity-' + version(),
-                        help="Prints version number")
-
+                        help="Matrix type [absolu, relatif, relatif-norm] (default: absolu)")
+    parser.add_argument('-V', '--version', action='version', version='VCFFilterSNPDensity-' + version())
     args = parser.parse_args()
     pre_main(args)
 
