@@ -101,7 +101,7 @@ def add_ST_label(config_file, legends, G, second_mlst):
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = ""
                             continue
-                        print(G.nodes[name_node])
+                        # print(G.nodes[name_node])
                     else:
                         continue
                     break
@@ -243,7 +243,7 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     pos = nx.nx_agraph.graphviz_layout(g)
 
     nx.set_node_attributes(g, pos, 'pos')
-    print(pos)
+    # print(pos)
 
     # with the coordinate xy of pos attribute the coordinate x and y to each strain
     for i in pos:
