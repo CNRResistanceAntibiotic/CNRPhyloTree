@@ -105,7 +105,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                     print("old classification")
                     out_dir = file_path
                     break
-                else:
+                elif f"_{row['strains']}_" in file:
                     print("OLD OLD classification")
                     out_dir = file_path
                     break

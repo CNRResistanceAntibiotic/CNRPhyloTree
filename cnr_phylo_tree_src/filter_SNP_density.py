@@ -62,7 +62,9 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
 
     # dernier chromosome
     print("last chrom")
+    print(snp_hash, sample_names, threshold)
     snp_hash = update_vcf_hash(snp_hash, sample_names, threshold)
+    print(snp_hash)
     print("\nClass SNPs in Keep or UnKeep\n")
     for pos in snp_hash:
         keep_list, unkeep_list = class_vcf(snp_hash.get(pos), type_matrix)
