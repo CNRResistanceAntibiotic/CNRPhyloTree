@@ -27,7 +27,7 @@ def read_with_min_dist_vcf(vcf_file, threshold, type_matrix):
             ".",
             var.REF,
             [alt.value for alt in var.ALT],
-            var.QUAL,
+            ".",
             ".",
             var.INFO,
             ":".join(var.FORMAT)
