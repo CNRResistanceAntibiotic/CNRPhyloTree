@@ -78,11 +78,7 @@ def update_vcf_hash(snp_hash, sample_names, threshold):
     for pos_1 in snp_hash:
         for pos_2 in snp_hash:
             if pos_1 != pos_2:
-                print(pos_1)
-                print(pos_2)
-                print(threshold)
-                print(abs(int(pos_1) - int(pos_2)))
-                if abs(int(pos_1) - int(pos_2)) <= threshold:
+                if abs(int(pos_1) - int(pos_2)) <= int(threshold):
                     var_list_1 = snp_hash.get(pos_1)
                     var_list_2 = snp_hash.get(pos_2)
                     for sample in sample_names:
