@@ -101,7 +101,7 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                     file_path_list.append(file_path)
                     break
                 # old classification with special rules. need to be supress in a further time
-                elif f"_{row['strains']}_" in file and ("_fastq_uploaded_" in file or "_nanopore_" in file or "_pacbio_" in file or "_hybride_" in file):
+                elif f"_{row['strains']}_" in file and ("_fastq_uploaded_" in file or "_nanopore_" in file or "_pacbio_" in file or "_hybride_" in file) and file_path not in file_path_list:
                     print("old classification")
                     print(file)
                     file_path_list.append(file_path)
