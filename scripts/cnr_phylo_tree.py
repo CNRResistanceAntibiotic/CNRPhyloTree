@@ -83,48 +83,51 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     """
     snippy_dir_dict = {}
     ref_genome = ""
+    file_path_list = []
     for row in config_list:
         print("\n", row)
         genome_name = row["genomes"].split(".")[0]
         print(genome_name)
         out_dir_root = os.path.join(result_dir, genome_name)
         print(out_dir_root)
+        print(row["sequence_source"])
         list_file = os.listdir(out_dir_root)
-        out_dir = ""
+        file_path = ""
         for file in list_file:
-            print(file)
             file_path = os.path.join(out_dir_root, file)
             if "_" in str(file):
-                file_split = str(file).split("_")[2:-1]
-                print(row["sequence_source"])
                 if f"_{row['strains']}_{row['sequence_source']}" in file:
-                    out_dir = file_path
+                    print(file)
+                    file_path_list.append(file_path)
                     break
                 # old classification with special rules. need to be supress in a further time
                 elif f"_{row['strains']}_" in file and ("_fastq_uploaded_" in file or "_nanopore_" in file or "_pacbio_" in file or "_hybride_" in file):
                     print("old classification")
-                    out_dir = file_path
+                    print(file)
+                    file_path_list.append(file_path)
                     break
-                elif f"_{row['strains']}_" in file:
+                elif f"_{row['strains']}_" in file and file_path not in file_path_list:
                     print("OLD OLD classification")
-                    out_dir = file_path
+                    print(file)
+                    file_path_list.append(file_path)
                     break
 
             else:
                 if row["strains"] == file and os.path.isdir(file_path):
-                    out_dir = file_path
+                    print(file_path)
+                    print("\n\nother ERROR\n\n")
                     break
-        if not os.path.exists(os.path.dirname(out_dir)):
-            print(f"Path : {out_dir}")
+        if not os.path.exists(os.path.dirname(file_path)):
+            print(f"Path : {file_path}")
             print(f"ERROR: the directory snippy for the strain {row['strains']} dont exist ! Exit!")
             exit(1)
         # case if reference genome in analysis
         ref_genome = os.path.join(geno_ref_dir, row["genomes"])
         if ref_genome not in snippy_dir_dict:
-            snippy_dir_dict[ref_genome] = [{"out_dir": out_dir, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
+            snippy_dir_dict[ref_genome] = [{"out_dir": file_path, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
         else:
             value_list = snippy_dir_dict[ref_genome]
-            value_list = value_list + [{"out_dir": out_dir, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
+            value_list = value_list + [{"out_dir": file_path, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
     return snippy_dir_dict, ref_genome
@@ -253,7 +256,6 @@ def manage_snippy_core(snippy_dir_dict, core_genome_path, bed_file):
                 if "#CHROM" in line:
                     for genome_ref, snippy_dir_list in snippy_dir_dict.items():
                         for element in snippy_dir_list:
-                            print(element)
                             name = element["strain"]
                             if "hybride" in element["sequence_source"]:
                                 name += "_hyb"
