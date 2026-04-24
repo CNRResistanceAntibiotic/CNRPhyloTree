@@ -54,7 +54,6 @@ def remove_duplicate(names, array):
                 legends[items_names] = ",".join(items)
 
     print(f"\nRemove duplicates: {indexes}\n")
-    # print(dl_dic)
     arr = df.values
     names = list(df.index)
     return names, arr, legends
@@ -71,13 +70,7 @@ def load_matrix(mtx_file):
     arr = np.genfromtxt(mtx_file, delimiter='\t', dtype=str)
     names = arr[0, 1:].tolist()
     data = np.asarray(arr[1:, 1:], dtype=int)
-    # print(names, "\n\n", data)
     names, data, legends = remove_duplicate(names, data)
-    # print("\n")
-    # print(names, "\n\n", data)
-    #    data as scipy sparce matrix
-    #    data = csr_matrix(data)
-    #    store column names, row names and data in mtx_dict dict
     mtx_dict = {'names': names, 'matrix': data}
     return mtx_dict, legends
 
@@ -101,7 +94,6 @@ def add_ST_label(config_file, legends, G, second_mlst):
                             if second_mlst:
                                 G.nodes[name_node]['st-2'] = ""
                             continue
-                        # print(G.nodes[name_node])
                     else:
                         continue
                     break
@@ -243,7 +235,6 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     pos = nx.nx_agraph.graphviz_layout(g)
 
     nx.set_node_attributes(g, pos, 'pos')
-    # print(pos)
 
     # with the coordinate xy of pos attribute the coordinate x and y to each strain
     for i in pos:
@@ -253,7 +244,6 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
     for start, end in g.edges():
         g.edges[start, end]['xector'] = np.array([g.nodes[start]['x'], g.nodes[end]['x']])
         g.edges[start, end]['yector'] = np.array([g.nodes[start]['y'], g.nodes[end]['y']])
-    # print(g.nodes.data('st'))
 
     # attribute a color in function of SNP number with the strain which are the closest
     for node in g.nodes():
@@ -272,10 +262,8 @@ def compute_network(mtx_dic, graph_name, config_file, legends, count_snp_keep):
                 elif g[node][key]['color'] == 'light-yellow':
                     try:
                         if g.nodes[node]['color'] != 'red' and g.nodes[node]['color'] != 'dark-yellow':
-                            # print(g[node][key])
                             g.nodes[node]['color'] = 'light-yellow'
                     except KeyError:
-                        # print(g[node][key])
                         g.nodes[node]['color'] = 'light-yellow'
                 else:
                     try:

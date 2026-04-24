@@ -22,8 +22,6 @@ def read_vcf(vcf_file):
 
     for record in reader:
         counter += 1
-        print(counter)
-        print(record)
 
     print(f"  Number of loci   : {len(vcf_dic)}")
     print(f"  Number of samples: {len(sample_names)}")

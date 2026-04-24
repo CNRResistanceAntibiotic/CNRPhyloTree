@@ -61,7 +61,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     This function run snippy core custom
     :param snippy_exe: the executable of snippy
     :param ref_genome: the reference genome
-    :param prefix: teh prefix given
+    :param prefix: the prefix given
     :param snippy_folder: snippy folder
     :return: nothing
     """
@@ -71,6 +71,30 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
         cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} --mask {bed_file} {snippy_folder}'
     print(cmd)
     os.system(cmd)
+
+    aln_file = f"{prefix}.aln"
+    aln_clean_file = f"{prefix}_clean.aln"
+    cmd = f"snippy-clean_full_aln {aln_file} > {aln_clean_file}"
+    print(cmd)
+    os.system(cmd)
+
+    parent_dir = os.path.dirname(prefix)
+    cmd = f"run_gubbins -p gubbins {aln_clean_file}"
+    print(cmd)
+    os.system(cmd)
+
+    gubbins_file = os.path.join(parent_dir, "gubbins.filtered_polymorphic_sites.fasta")
+    core_clean_file = os.path.join(parent_dir, "clean.core.aln")
+    cmd = f"snp-sites -c {gubbins_file} > {core_clean_file}"
+    print(cmd)
+    os.system(cmd)
+
+    core_clean_tree_file = os.path.join(parent_dir, "clean.core.tree")
+    cmd = f"FastTree -gtr -nt {core_clean_file} > {core_clean_tree_file}"
+    print(cmd)
+    os.system(cmd)
+
+
 
 
 def get_snippy_dir(geno_ref_dir, result_dir, config_list):
@@ -87,28 +111,22 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
     for row in config_list:
         print("\n", row)
         genome_name = row["genomes"].split(".")[0]
-        print(genome_name)
         out_dir_root = os.path.join(result_dir, genome_name)
-        print(out_dir_root)
-        print(row["sequence_source"])
         list_file = os.listdir(out_dir_root)
         file_path = ""
         for file in list_file:
             file_path = os.path.join(out_dir_root, file)
             if "_" in str(file):
                 if f"_{row['strains']}_{row['sequence_source']}" in file:
-                    print(file)
                     file_path_list.append(file_path)
                     break
                 # old classification with special rules. need to be supress in a further time
                 elif f"_{row['strains']}_" in file and ("_fastq_uploaded_" in file or "_nanopore_" in file or "_pacbio_" in file or "_hybride_" in file) and file_path not in file_path_list:
                     print("old classification")
-                    print(file)
                     file_path_list.append(file_path)
                     break
                 elif f"_{row['strains']}_" in file and file_path not in file_path_list:
                     print("OLD OLD classification")
-                    print(file)
                     file_path_list.append(file_path)
                     break
 
@@ -130,6 +148,8 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             value_list = value_list + [{"out_dir": file_path, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
+    
+    print(snippy_dir_dict)
     return snippy_dir_dict, ref_genome
 
 
@@ -341,7 +361,6 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
             log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-            print(log_message)
             tmp_cat_list.append(tmp_cat_file)
             x += 1
 
@@ -350,21 +369,18 @@ def read_low_coverage(snippy_dir_dict, snippy_core_genome_folder):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-        print(log_message)
         # bedtools
         cmd = f"bedtools sort -i {merge_bed_file} | bedtools merge -i stdin > {merge_bed_sort_file}"
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-        print(log_message)
         awk_cmd = "awk -F'\t' 'BEGIN{SUM=0}{SUM+=$3-$2 }END{print SUM}'"
         cmd = f"cat {merge_bed_sort_file} | {awk_cmd}"
         log_message = cmd
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\nCOUNT:' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-        print(log_message)
         return merge_bed_sort_file
     else:
         return "no file"
@@ -381,7 +397,6 @@ def compute_constant_site(bed_file, ref_genome):
             p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
             out, err = p.communicate()
             log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-            print(log_message)
             ref_genome = new_ref_genome
 
         for rec in SeqIO.parse(ref_genome, "fasta"):
@@ -402,7 +417,6 @@ def compute_constant_site(bed_file, ref_genome):
         p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         out, err = p.communicate()
         log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
-        print(log_message)
 
         for rec in SeqIO.parse(out_constant_fasta, "fasta"):
             for base in rec.seq:
@@ -504,32 +518,12 @@ def manage_make_tree(r_matrix_list, config_list):
                         y += 1
                         value = row[col]
                         line.append(value)
-                    print(x, y)
                     matrix.append(line)
                     key = row[""]
                     del row[""]
                     matrix_dict[key] = row
                 dm = DistanceMatrix(matrix, headers)
                 tree = nj(dm)
-                # print(tree.ascii_art())
-                # rooted = tree.root_at_midpoint()
-                # print(rooted)
-                # print(rooted.ascii_art())
-                """
-                print(headers)
-                print(matrix)
-                matrix_triangular = []
-                for n, line in enumerate(matrix):
-                    print(n)
-                    desired_array = [int(numeric_string) for numeric_string in line]
-                    print(desired_array[0:n+1])
-                    matrix_triangular.append(desired_array[0:n+1])
-                matrice_biopython = DistanceMatrix(names=headers, matrix=matrix_triangular)
-                constructor = DistanceTreeConstructor()
-                upgmatree = constructor.upgma(matrice_biopython)
-                upgmatree_rooted_at_midpoint = upgmatree.root_at_midpoint()
-                newick_str = upgmatree_rooted_at_midpoint
-                """
                 newick_str = tree.root_at_midpoint()
                 with open(file_newick_path, 'w') as out:
                     out.write(f"{newick_str}")
@@ -540,7 +534,6 @@ def manage_make_tree(r_matrix_list, config_list):
                 print(f"the phyloxml generation step is done for {r_matrix}")
                 # make extended phyloxml file for phyd3
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
-                print(config_list, matrix_dict)
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
 
