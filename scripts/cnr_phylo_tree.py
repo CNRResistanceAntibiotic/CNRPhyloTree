@@ -125,11 +125,6 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
                     print("old classification")
                     file_path_list.append(file_path)
                     break
-                elif f"_{row['strains']}_" in file and file_path not in file_path_list:
-                    print("OLD OLD classification")
-                    file_path_list.append(file_path)
-                    break
-
             else:
                 if row["strains"] == file and os.path.isdir(file_path):
                     print(file_path)
@@ -148,7 +143,6 @@ def get_snippy_dir(geno_ref_dir, result_dir, config_list):
             value_list = value_list + [{"out_dir": file_path, "strain": row["strains"], "sequence_source": row["sequence_source"]}]
             # update dict
             snippy_dir_dict[ref_genome] = value_list
-    
     print(snippy_dir_dict)
     return snippy_dir_dict, ref_genome
 
@@ -509,7 +503,6 @@ def manage_make_tree(r_matrix_list, config_list):
                 matrix = []
                 matrix_dict = {}
                 x = 0
-
                 for row in reader:
                     x += 1
                     y = 0
@@ -536,11 +529,8 @@ def manage_make_tree(r_matrix_list, config_list):
                 file_ext_phyloxml_path = os.path.join(os.path.dirname(r_matrix), "extended_phyloxml.xml")
                 get_phyloxml_extended(file_ext_phyloxml_path, file_phylo_xml_path, config_list, matrix_dict)
                 print(f"the extended phyloxml generation step is done for {r_matrix}")
-
                 print()
-
                 execute_R.main(file_newick_path, file_png_path)
-
         else:
             print(f"the newick generation step is already done for {r_matrix}")
 
