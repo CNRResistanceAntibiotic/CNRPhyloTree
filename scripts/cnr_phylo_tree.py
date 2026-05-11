@@ -79,7 +79,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     os.system(cmd)
 
     parent_dir = os.path.dirname(prefix)
-    cmd = f"run_gubbins -p gubbins {aln_clean_file}"
+    cmd = f"run_gubbins.py -p {parent_dir}/gubbins {aln_clean_file}"
     print(cmd)
     os.system(cmd)
 
