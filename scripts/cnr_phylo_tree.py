@@ -69,30 +69,45 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
         cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} {snippy_folder}'
     else:
         cmd = f'{snippy_exe} --ref {ref_genome} --prefix {prefix} --mask {bed_file} {snippy_folder}'
-    print(cmd)
-    os.system(cmd)
+    log_message = " ".join(cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+    print(log_message)
 
     aln_file = f"{prefix}.aln"
     aln_clean_file = f"{prefix}_clean.aln"
     cmd = f"snippy-clean_full_aln {aln_file} > {aln_clean_file}"
-    print(cmd)
-    os.system(cmd)
+    log_message = " ".join(cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+    print(log_message)
 
     parent_dir = os.path.dirname(prefix)
     cmd = f"run_gubbins.py -p {parent_dir}/gubbins {aln_clean_file}"
-    print(cmd)
-    os.system(cmd)
+    log_message = " ".join(cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+    print(log_message)
 
     gubbins_file = os.path.join(parent_dir, "gubbins.filtered_polymorphic_sites.fasta")
     core_clean_file = os.path.join(parent_dir, "clean.core.aln")
     cmd = f"snp-sites -c {gubbins_file} > {core_clean_file}"
-    print(cmd)
-    os.system(cmd)
+    log_message = " ".join(cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+    print(log_message)
 
     core_clean_tree_file = os.path.join(parent_dir, "clean.core.tree")
     cmd = f"FastTree -gtr -nt {core_clean_file} > {core_clean_tree_file}"
-    print(cmd)
-    os.system(cmd)
+    log_message = " ".join(cmd)
+    p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+    out, err = p.communicate()
+    log_message = log_message + '\n' + out.decode("utf-8") + '\n' + err.decode("utf-8")
+    print(log_message)
 
 
 
