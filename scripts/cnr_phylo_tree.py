@@ -85,7 +85,7 @@ def run_snippy_core_custom(snippy_exe, ref_genome, prefix, bed_file, snippy_fold
     print(log_message)
 
     parent_dir = os.path.dirname(prefix)
-    cmd = f"run_gubbins.py -p {parent_dir}/gubbins {aln_clean_file}"
+    cmd = f"run_gubbins.py -p {parent_dir}/gubbins -v {aln_clean_file}"
     log_message = " ".join(cmd)
     p = subprocess.Popen(cmd, shell=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
     out, err = p.communicate()
